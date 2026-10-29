@@ -4,3 +4,4 @@ database/
 *.log
 .DS_Store
 .env
+*.zip

@@ -1,5 +1,5 @@
-import { useEffect, useState, Link } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import JobCard from '../components/JobCard.jsx';
 import Icon from '../components/Icon.jsx';

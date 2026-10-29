@@ -63,6 +63,18 @@ npm run dev        # Vite sur :5173 (proxy /api → :3001)
 npm run seed       # recrée entreprises, 60 offres, conseils, compte Mamadou
 ```
 
+### Tests de fumée (anti « page blanche »)
+
+```bash
+npm run build
+node smoke-test.mjs            # vérifie la page /
+node smoke-test.mjs /jobs      # vérifie n'importe quelle route
+WITH_TOKEN=1 node smoke-test.mjs /app   # simule un utilisateur connecté
+```
+
+Le test charge le bundle dans **jsdom**, intercepte les erreurs React/runtime
+et échoue si une page se rend vide. Toutes les routes du projet sont couvertes.
+
 ## 🗄️ Base de données (`database/carriereos.db`)
 
 ```

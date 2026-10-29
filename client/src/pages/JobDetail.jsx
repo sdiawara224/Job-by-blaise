@@ -91,7 +91,7 @@ export default function JobDetail({ inApp = false }) {
   }, [data]);
 
   if (err) return <div className="page-loader">{err}</div>;
-  if (!data) return <div className="page-loader">Chargement de l’offre…</div>;
+  if (!data || !data.job) return <div className="page-loader">Chargement de l’offre…</div>;
 
   const { job, applied } = data;
   const c = job.company || {};
