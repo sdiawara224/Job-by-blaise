@@ -192,6 +192,15 @@ h3 { font-size: 1.1rem; font-weight: 700; }
   padding: 56px 0 72px; overflow: hidden;
 }
 .hero-inner { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+.hero-inner.solo { grid-template-columns: 1fr; }
+.hero-copy.solo {
+  max-width: 800px; margin: 0 auto; text-align: center;
+  animation-delay: 0.05s;
+}
+.hero-copy.solo .hero-sub { margin-left: auto; margin-right: auto; }
+.hero-copy.solo .hero-pill { margin-left: auto; margin-right: auto; }
+.hero-copy.solo .hero-cta,
+.hero-copy.solo .hero-trust { justify-content: center; }
 .hero-pill {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--green-soft); border: 1px solid #b7ecd6; color: #027a48;

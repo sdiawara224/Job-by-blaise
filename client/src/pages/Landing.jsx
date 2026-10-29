@@ -4,101 +4,7 @@ import Navbar from '../components/Navbar.jsx';
 import CompanyCard from '../components/CompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
-import MatchRing from '../components/MatchRing.jsx';
 import { api } from '../api.js';
-
-/* ---------- Maquette du dashboard (visuel du hero) ---------- */
-function MockSidebar() {
-  const items = [
-    ['home', 'Accueil', true],
-    ['jobs', 'Offres d’emploi'],
-    ['profile', 'Mon profil'],
-    ['apps', 'Mes candidatures'],
-    ['bell', 'Mes alertes'],
-    ['advice', 'Conseils carrière'],
-  ];
-  return (
-    <div className="mk-sidebar">
-      <div className="mk-brand"><span className="mk-dot" /> Job by <span>blaise</span></div>
-      {items.map(([ic, label, active]) => (
-        <div key={label} className={`mk-navitem ${active ? 'active' : ''}`}>
-          <Icon name={ic} size={13} /> {label}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DashboardMockup() {
-  return (
-    <div className="mock" aria-hidden="true">
-      <div className="mock-window">
-        <MockSidebar />
-        <div className="mock-main">
-          <div className="mock-topbar">
-            <span className="mock-navlinks"><b>Accueil</b> Offres Mon profil Conseils</span>
-            <span className="mock-user"><span className="mock-avatar">MD</span> Bonjour<br />Mamadou</span>
-          </div>
-          <div className="mock-greet">
-            <h4>Bonjour Mamadou 👋</h4>
-            <p>De nouvelles opportunités t’attendent en Guinée.</p>
-          </div>
-          <div className="mock-searchbar">
-            <span className="mock-search-input"><Icon name="search" size={12} /> Rechercher un emploi, une entreprise…</span>
-            <span className="mock-search-loc"><Icon name="pin" size={12} /> Conakry, Guinée</span>
-            <span className="mock-search-btn"><Icon name="search" size={12} /></span>
-          </div>
-          <div className="mock-grid">
-            <div className="mock-jobcard">
-              <div className="mock-jobcard-title">Offre d'emploi <span>•••</span></div>
-              <div className="mock-jobcard-body">
-                <div>
-                  <h5>Assistant Administratif</h5>
-                  <p>Société basée à Conakry</p>
-                  <div className="mock-chips">
-                    <span>📍 Conakry, Guinée</span>
-                    <span>💼 Temps plein</span>
-                    <span>🎓 Bac+2</span>
-                  </div>
-                  <p className="mock-desc">La société recherche un Assistant Administratif pour ses activités au sein de son siège à Conakry.</p>
-                  <span className="mock-cta">Voir l'offre →</span>
-                </div>
-                <div className="mock-match">
-                  <MatchRing score={91} size={62} stroke={5} label={false} />
-                  <small>Match</small>
-                </div>
-              </div>
-            </div>
-            <div className="mock-profilecard">
-              <div className="mock-jobcard-title">Mon profil <span>Modifier</span></div>
-              <div className="mock-profile-body">
-                <MatchRing score={85} size={58} stroke={5} label={false} />
-                <ul>
-                  <li>✓ CV optimal</li>
-                  <li>✓ Compétences renseignées</li>
-                  <li>✓ Préférences définies</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mock-phone">
-        <div className="mock-phone-time">7:00</div>
-        <div className="mock-phone-date">Mar. 27 mai</div>
-        <div className="mock-notif">
-          <div className="mock-notif-head">
-            <span className="mock-notif-icon" aria-hidden="true">J</span>
-            <b>Job by blaise</b> <span>maintenant</span>
-          </div>
-          <strong>Alerte SMS – 7h00</strong>
-          <p>3 nouvelles offres correspondent à votre profil.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ---------- Illustrations SVG ---------- */
 function CvIllustration() {
@@ -239,8 +145,8 @@ export default function Landing() {
 
       {/* ============ 1. HERO ============ */}
       <section className="hero">
-        <div className="container hero-inner">
-          <div className="hero-copy reveal">
+        <div className="container hero-inner solo">
+          <div className="hero-copy solo reveal">
             <span className="hero-pill">✓ Votre prochain emploi n'attend que vous !</span>
             <h1>
               Transformez votre carrière<br />
@@ -260,10 +166,6 @@ export default function Landing() {
               <span><b>18</b> entreprises</span>
               <span><b>4,8/5</b> ★ candidats</span>
             </div>
-          </div>
-          <div className="hero-visual reveal d2">
-            <DashboardMockup />
-            <span className="hero-scribble">Le bon emploi.<br />Au bon moment.</span>
           </div>
         </div>
       </section>
