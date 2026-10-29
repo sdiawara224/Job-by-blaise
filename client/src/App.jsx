@@ -3,6 +3,8 @@ import { useAuth } from './auth.jsx';
 import Landing from './pages/Landing.jsx';
 import Jobs from './pages/Jobs.jsx';
 import JobDetail from './pages/JobDetail.jsx';
+import Entreprises from './pages/Entreprises.jsx';
+import EntrepriseDetail from './pages/EntrepriseDetail.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Advice from './pages/Advice.jsx';
@@ -35,6 +37,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/jobs" element={<Jobs />} />
       <Route path="/jobs/:id" element={<JobDetail />} />
+      <Route path="/entreprises" element={<Entreprises />} />
+      <Route path="/entreprises/:id" element={<EntrepriseDetail />} />
       <Route path="/conseils" element={<Advice />} />
       <Route path="/conseils/:id" element={<AdviceDetail />} />
       <Route path="/connexion" element={<GuestOnly><Login /></GuestOnly>} />

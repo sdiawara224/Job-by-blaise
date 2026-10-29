@@ -21,8 +21,13 @@ Application full-stack complète : **frontend React**, **backend Express API** e
 | **Conseils carrière** | Articles pratiques : CV, entretien, négociation salariale, stratégie 30 jours… |
 
 ### Pages publiques
-- **Landing** (`/`) — hero « Trouve les offres qui te correspondent », 4 piliers (Emplois, CV, Matching, Alertes SMS), bandeau confiance, maquette du dashboard, étapes, section SMS, conseils, footer.
-- **`/jobs`** — annuaire d'offres, **`/jobs/:id`** — détail avec **analyse du match** (compétences, localisation, contrat, diplôme, expérience) et candidature en 1 clic.
+- **Landing** (`/`) — structure type Mansa Talents : hero « Transformez votre carrière »
+  (CTA *Trouver un job* / *Créer mon CV*), **les dernières offres d'emploi**, **les
+  entreprises qui recrutent** (note ★, ancienneté, effectif, nb d'offres), **CV en 3 clics**,
+  **recherche poste + ville**, **3 étapes « Rejoignez l'aventure »** avec aperçu du CV builder.
+- **`/jobs`** — annuaire d'offres, **`/jobs/:id`** — détail avec **analyse du match**
+  (compétences, localisation, contrat, diplôme, expérience) et candidature en 1 clic.
+- **`/entreprises`** + **`/entreprises/:id`** — annuaire et fiche entreprise avec ses offres.
 - **`/conseils`** — bibliothèque de conseils carrière.
 
 ## 🧰 Stack technique

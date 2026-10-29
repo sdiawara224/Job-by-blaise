@@ -309,6 +309,40 @@ router.get('/advice/:id(\\d+)', (req, res) => {
   res.json({ article: row });
 });
 
+// ================= ENTREPRISES =================
+function companyRow(r, jobCount) {
+  return {
+    id: r.id,
+    name: r.name,
+    sector: r.sector,
+    city: r.city,
+    description: r.description,
+    color: r.color,
+    foundedYear: r.founded_year || 2020,
+    staffSize: r.staff_size || '1 à 10 collaborateurs',
+    jobCount: jobCount ?? r.job_count ?? 0,
+    rating: Number((r.id % 3 === 0 ? 5 : 4 + ((r.id * 7) % 10) / 10).toFixed(1)),
+  };
+}
+
+router.get('/companies', (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.*, COUNT(j.id) AS job_count
+    FROM companies c LEFT JOIN jobs j ON j.company_id = c.id AND j.is_active = 1
+    GROUP BY c.id ORDER BY job_count DESC, c.name
+  `).all();
+  res.json({ companies: rows.map((r) => companyRow(r)) });
+});
+
+router.get('/companies/:id(\\d+)', (req, res) => {
+  const row = db.prepare('SELECT * FROM companies WHERE id = ?').get(Number(req.params.id));
+  if (!row) return res.status(404).json({ error: 'Entreprise introuvable.' });
+  const uid = getUserFromRequest(req);
+  const profile = uid ? publicUser(loadUser(uid)) : null;
+  const jobs = withMatch(profile, searchJobs({})).filter((j) => j.company && j.company.id === row.id);
+  res.json({ company: companyRow(row, jobs.length), jobs });
+});
+
 // ================= DASHBOARD / STATS =================
 router.get('/dashboard', requireAuth, (req, res) => {
   const profile = publicUser(req.user);

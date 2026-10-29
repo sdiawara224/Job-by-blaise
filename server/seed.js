@@ -7,25 +7,26 @@ const D = (daysAgo) => {
   return d.toISOString().slice(0, 19).replace('T', ' ');
 };
 
+// [nom, secteur, ville, description, couleur, fondée en, taille]
 export const COMPANIES = [
-  ['Ghapia Logistics', 'Transport & Logistique', 'Conakry', 'Opérateur logistique multimodal basé au Port de Kaloum, spécialiste du fret ouest-africain.', '#2E6BFF'],
-  ['FBC Télécom', 'Télécommunications', 'Conakry', 'Opérateur de services numériques et connectivité pour les entreprises de Guinée.', '#7C3AED'],
-  ['Mining Resources Guinée', 'Industrie minière', 'Boké', 'Compagnie bauxitière engagée dans l’exploitation responsable et le développement local.', '#EA580C'],
-  ['Banque du Sahel Guinée', 'Banque & Finance', 'Conakry', 'Banque de détail et d’entreprise présente dans 6 pays d’Afrique de l’Ouest.', '#0F766E'],
-  ['Résidence Belmont', 'Hôtellerie & Tourisme', 'Conakry', 'Groupe hôtelier 4 étoiles : chambres, séminaires et restauration.', '#DB2777'],
-  ['Enfance Avenir ONG', 'ONG & Développement', 'Conakry', 'ONG de terrain : éducation, santé communautaire et autonomisation des femmes.', '#16A34A'],
-  ['Agro Guinée SARL', 'Agriculture & Agroalimentaire', 'Kankan', 'Transformation et commercialisation des produits vivriers de la haute Guinée.', '#65A30D'],
-  ['Digital Conakry', 'Technologie & Numérique', 'Conakry', 'Studio produit web & mobile : applications pour les PME ouest-africaines.', '#2563EB'],
-  ['Clinique La Providence', 'Santé', 'Conakry', 'Centre médical multimodal : consultations, urgences, maternité, imagerie.', '#DC2626'],
-  ['Académie Numérique Guinée', 'Éducation & Formation', 'Conakry', 'Organisme de formation aux métiers du numérique et du multilinguisme.', '#0891B2'],
-  ['Énergie Power Guinée', 'Énergie & Utilities', 'Labé', 'Production et distribution d’électricité hydro et solaire en région.', '#F59E0B'],
-  ['Groupe Diallo Commerce', 'Distribution & Commerce', 'Nzérékoré', 'Réseau de distribution de biens de grande consommation en Guinée forestière.', '#9333EA'],
-  ['SBX Bauxite Co', 'Industrie minière', 'Boké', 'JV international d’extraction de bauxite, logistique rail–port.', '#C2410C'],
-  ['Lagune Digital', 'Technologie & Numérique', 'Abidjan', 'Agence produit Côte d’Ivoire : plateformes e-commerce et fintech.', '#4F46E5'],
-  ['Bamako Logistique', 'Transport & Logistique', 'Bamako', 'Transport transfrontalier marchandises et gestion de dépôts au Mali.', '#0D9488'],
-  ['Dakar Tech Hub', 'Technologie & Numérique', 'Dakar', 'Incubateur et accélérateur de startups sénégalaises.', '#E11D48'],
-  ['Douala Industries', 'Industrie & BTP', 'Douala', 'Bâtiment industriel et maintenance d’ouvrages au Cameroun.', '#7C2D12'],
-  ['Clinique du Fleuve', 'Santé', 'Kankan', 'Clinique privée de référence de la région de Kankan.', '#BE123C'],
+  ['Ghapia Logistics', 'Transport & Logistique', 'Conakry', 'Opérateur logistique multimodal basé au Port de Kaloum, spécialiste du fret ouest-africain.', '#2E6BFF', 2016, '51 à 200 collaborateurs'],
+  ['FBC Télécom', 'Télécommunications', 'Conakry', 'Opérateur de services numériques et connectivité pour les entreprises de Guinée.', '#7C3AED', 2014, '201 à 500 collaborateurs'],
+  ['Mining Resources Guinée', 'Industrie minière', 'Boké', 'Compagnie bauxitière engagée dans l’exploitation responsable et le développement local.', '#EA580C', 2011, '501 à 1000 collaborateurs'],
+  ['Banque du Sahel Guinée', 'Banque & Finance', 'Conakry', 'Banque de détail et d’entreprise présente dans 6 pays d’Afrique de l’Ouest.', '#0F766E', 2010, '501 à 1000 collaborateurs'],
+  ['Résidence Belmont', 'Hôtellerie & Tourisme', 'Conakry', 'Groupe hôtelier 4 étoiles : chambres, séminaires et restauration.', '#DB2777', 2013, '11 à 50 collaborateurs'],
+  ['Enfance Avenir ONG', 'ONG & Développement', 'Conakry', 'ONG de terrain : éducation, santé communautaire et autonomisation des femmes.', '#16A34A', 2017, '11 à 50 collaborateurs'],
+  ['Agro Guinée SARL', 'Agriculture & Agroalimentaire', 'Kankan', 'Transformation et commercialisation des produits vivriers de la haute Guinée.', '#65A30D', 2018, '11 à 50 collaborateurs'],
+  ['Digital Conakry', 'Technologie & Numérique', 'Conakry', 'Studio produit web & mobile : applications pour les PME ouest-africaines.', '#2563EB', 2020, '1 à 10 collaborateurs'],
+  ['Clinique La Providence', 'Santé', 'Conakry', 'Centre médical multimodal : consultations, urgences, maternité, imagerie.', '#DC2626', 2012, '51 à 200 collaborateurs'],
+  ['Académie Numérique Guinée', 'Éducation & Formation', 'Conakry', 'Organisme de formation aux métiers du numérique et du multilinguisme.', '#0891B2', 2019, '11 à 50 collaborateurs'],
+  ['Énergie Power Guinée', 'Énergie & Utilities', 'Labé', 'Production et distribution d’électricité hydro et solaire en région.', '#F59E0B', 2015, '51 à 200 collaborateurs'],
+  ['Groupe Diallo Commerce', 'Distribution & Commerce', 'Nzérékoré', 'Réseau de distribution de biens de grande consommation en Guinée forestière.', '#9333EA', 2008, '201 à 500 collaborateurs'],
+  ['SBX Bauxite Co', 'Industrie minière', 'Boké', 'JV international d’extraction de bauxite, logistique rail–port.', '#C2410C', 2009, '1000+ collaborateurs'],
+  ['Lagune Digital', 'Technologie & Numérique', 'Abidjan', 'Agence produit Côte d’Ivoire : plateformes e-commerce et fintech.', '#4F46E5', 2018, '11 à 50 collaborateurs'],
+  ['Bamako Logistique', 'Transport & Logistique', 'Bamako', 'Transport transfrontalier marchandises et gestion de dépôts au Mali.', '#0D9488', 2016, '51 à 200 collaborateurs'],
+  ['Dakar Tech Hub', 'Technologie & Numérique', 'Dakar', 'Incubateur et accélérateur de startups sénégalaises.', '#E11D48', 2021, '1 à 10 collaborateurs'],
+  ['Douala Industries', 'Industrie & BTP', 'Douala', 'Bâtiment industriel et maintenance d’ouvrages au Cameroun.', '#7C2D12', 2012, '201 à 500 collaborateurs'],
+  ['Clinique du Fleuve', 'Santé', 'Kankan', 'Clinique privée de référence de la région de Kankan.', '#BE123C', 2017, '11 à 50 collaborateurs'],
 ];
 
 const DOMAIN_DESC = {
@@ -279,6 +280,13 @@ Dans CarrièreOS, la lettre se joint en un clic à votre candidature depuis la p
 
 export function seed({ force = false } = {}) {
   initSchema();
+
+  // Complète les colonnes « fondée en / taille » sur une base déjà peuplée
+  const backfill = db.prepare(
+    'UPDATE companies SET founded_year = ?, staff_size = ? WHERE name = ? AND founded_year IS NULL'
+  );
+  for (const c of COMPANIES) backfill.run(c[5], c[6], c[0]);
+
   const jobCount = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n;
   if (jobCount > 0 && !force) return { skipped: true, jobs: jobCount };
 
@@ -289,7 +297,7 @@ export function seed({ force = false } = {}) {
   }
 
   const insCompany = db.prepare(
-    'INSERT INTO companies (name, sector, city, description, color) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO companies (name, sector, city, description, color, founded_year, staff_size) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   const companyIds = [];
   for (const c of COMPANIES) companyIds.push(Number(insCompany.run(...c).lastInsertRowid));

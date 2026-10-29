@@ -11,8 +11,8 @@ export default function Navbar() {
         <Logo />
         <nav className="navbar-links">
           <NavLink to="/jobs">Emplois</NavLink>
+          <NavLink to="/entreprises">Entreprises</NavLink>
           <NavLink to="/conseils">Conseils carrière</NavLink>
-          <NavLink to="/jobs?contract=Temps+plein">Offres du moment</NavLink>
         </nav>
         <div className="navbar-actions">
           {user ? (

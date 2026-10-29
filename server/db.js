@@ -39,7 +39,9 @@ export function initSchema() {
       sector TEXT NOT NULL,
       city TEXT NOT NULL,
       description TEXT DEFAULT '',
-      color TEXT DEFAULT '#2E6BFF'
+      color TEXT DEFAULT '#2E6BFF',
+      founded_year INTEGER,
+      staff_size TEXT
     );
 
     CREATE TABLE IF NOT EXISTS jobs (
@@ -101,6 +103,11 @@ export function initSchema() {
       color TEXT DEFAULT '#2E6BFF'
     );
   `);
+
+  // Migration : colonnes entreprises ajoutées après-coup (bases déjà créées)
+  const cols = db.prepare('PRAGMA table_info(companies)').all().map((c) => c.name);
+  if (!cols.includes('founded_year')) db.exec('ALTER TABLE companies ADD COLUMN founded_year INTEGER');
+  if (!cols.includes('staff_size')) db.exec('ALTER TABLE companies ADD COLUMN staff_size TEXT');
 }
 
 export const EDUCATION_ORDER = [

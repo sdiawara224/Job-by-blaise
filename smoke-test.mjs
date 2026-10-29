@@ -68,6 +68,21 @@ define('fetch', async (url) => {
   else if (u.includes('/jobs/recommended')) body = { jobs: [{ ...job }, { ...job, id: 2 }] };
   else if (/\/jobs\/\d+/.test(u)) body = { job, applied: false };
   else if (u.includes('/jobs?')) body = { jobs: [job], total: 1 };
+  else if (u.includes('/companies?') || /\/companies$/.test(u.split('?')[0])) body = {
+    companies: [1, 2, 3, 4, 5, 6].map((i) => ({
+      id: i, name: `Entreprise ${i}`, sector: 'Technologie', city: 'Conakry',
+      description: 'Desc.', color: '#2E6BFF', foundedYear: 2020,
+      staffSize: '11 à 50 collaborateurs', jobCount: i, rating: 4.5,
+    })),
+  };
+  else if (/\/companies\/\d+/.test(u)) body = {
+    company: {
+      id: 1, name: 'Ghapia Logistics', sector: 'Transport', city: 'Conakry',
+      description: 'Desc.', color: '#2E6BFF', foundedYear: 2016,
+      staffSize: '51 à 200 collaborateurs', jobCount: 1, rating: 4.7,
+    },
+    jobs: [job],
+  };
   else if (u.includes('/stats')) body = { jobs: 60, companies: 18, cities: 10, users: 1 };
   else if (u.includes('/dashboard')) body = {
     greeting: { fullName: user.fullName, city: user.city },
