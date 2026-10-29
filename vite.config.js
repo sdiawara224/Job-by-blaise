@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// NO_MINIFY=1 : bundle lisible + erreurs React complètes (debug anti-page-blanche)
 export default defineConfig({
   root: 'client',
   plugins: [react()],
-  // NO_MINIFY=1 : bundle lisible + erreurs React complètes (debug)
   define: process.env.NO_MINIFY ? { 'process.env.NODE_ENV': '"development"' } : {},
   build: {
     outDir: '../dist',
@@ -15,8 +15,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    proxy: {
-      '/api': 'http://localhost:3001',
-    },
+    proxy: { '/api': 'http://localhost:3001' },
   },
 });

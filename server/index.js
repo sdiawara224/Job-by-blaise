@@ -13,7 +13,6 @@ const PORT = Number(process.env.PORT) || 3001;
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
-// log léger des requêtes API
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     console.log(`${new Date().toISOString()}  ${req.method} ${req.path}`);
@@ -23,7 +22,7 @@ app.use((req, res, next) => {
 
 app.use('/api', router);
 
-// statiques + SPA fallback
+// statiques + repli SPA
 if (fs.existsSync(DIST)) {
   app.use(express.static(DIST));
   app.use((req, res, next) => {
@@ -36,7 +35,7 @@ if (fs.existsSync(DIST)) {
   });
 }
 
-// ---------- planificateur d'alertes SMS (7h00 par utilisateur) ----------
+// ---------- planificateur d'alertes SMS (heure choisie par l'utilisateur) ----------
 function runDueAlerts() {
   try {
     const now = new Date();
@@ -58,10 +57,13 @@ function runDueAlerts() {
 setInterval(runDueAlerts, 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
+  const inner = 'Job by blaise — Le bon emploi. Au bon moment.';
+  const width = 2 + inner.length + 1;
+  const rule = '─'.repeat(width);
   console.log('');
-  console.log('  ┌────────────────────────────────────────────────┐');
-  console.log('  │  Job by blaise — Le bon emploi. Au bon moment. │');
-  console.log('  └────────────────────────────────────────────────┘');
+  console.log(`  ┌${rule}┐`);
+  console.log(`  │  ${inner} │`);
+  console.log(`  └${rule}┘`);
   console.log(`  API      : http://localhost:${PORT}/api`);
   console.log(`  Front    : ${fs.existsSync(DIST) ? `http://localhost:${PORT}/ (fichiers statiques)` : 'non buildé → npm run build'}`);
   console.log(`  Démo     : mamadou@jobbyblaise.com / demo1234`);

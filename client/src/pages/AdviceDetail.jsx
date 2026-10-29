@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar.jsx';
 import Icon from '../components/Icon.jsx';
 import { api } from '../api.js';
 
-// Petit rendu markdown léger : **gras**, listes, titres numérotés, paragraphes
+// Petit rendu markdown léger : **gras**, listes, paragraphes
 function renderContent(text) {
   const lines = String(text || '').split('\n');
   return lines.map((line, i) => {
@@ -14,9 +14,6 @@ function renderContent(text) {
     if (!html.trim()) return <div key={i} className="art-gap" />;
     if (/^\d+\.\s/.test(html)) return <p key={i} className="art-li" dangerouslySetInnerHTML={{ __html: html }} />;
     if (html.startsWith('- ')) return <p key={i} className="art-li dash" dangerouslySetInnerHTML={{ __html: html }} />;
-    if (html.includes(':') && html.length < 90 && !html.startsWith('<b>')) {
-      return <p key={i} className="art-p" dangerouslySetInnerHTML={{ __html: html }} />;
-    }
     return <p key={i} className="art-p" dangerouslySetInnerHTML={{ __html: html }} />;
   });
 }
@@ -51,7 +48,7 @@ export default function AdviceDetail({ inApp = false }) {
           <h1>{art.title}</h1>
           <div className="article-meta">
             <span><Icon name="clock" size={14} /> {art.minutes} min de lecture</span>
-            <span>· Job by blaise Équipe</span>
+            <span>· L'équipe Job by blaise</span>
           </div>
           <div className="article-body">
             {renderContent(art.content)}

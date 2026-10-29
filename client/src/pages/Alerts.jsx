@@ -178,7 +178,6 @@ export default function Alerts() {
           </div>
         </div>
 
-        {/* --- Boîte SMS --- */}
         <aside className="alerts-aside">
           <div className="phone-frame">
             <div className="phone-notch" />

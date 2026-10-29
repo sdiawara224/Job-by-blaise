@@ -39,11 +39,9 @@ function searchJobs({ search, city, contract, domain, sort } = {}) {
   if (contract) { clauses.push('j.contract = ?'); params.push(contract); }
   if (domain) { clauses.push('j.domain = ?'); params.push(domain); }
   let sql = `${JOB_SELECT} WHERE ${clauses.join(' AND ')}`;
-  if (sort === 'recent') sql += ' ORDER BY j.posted_at DESC';
-  else if (sort === 'salary') sql += ' ORDER BY j.salary_max DESC';
+  if (sort === 'salary') sql += ' ORDER BY j.salary_max DESC';
   else sql += ' ORDER BY j.posted_at DESC';
-  const rows = db.prepare(sql).all(...params);
-  return rows.map(jobRow);
+  return db.prepare(sql).all(...params).map(jobRow);
 }
 
 function withMatch(profile, jobs) {
@@ -68,11 +66,12 @@ router.post('/auth/register', (req, res) => {
   `).run(String(email).toLowerCase(), hashPassword(password), fullName.trim(), phone || '', city || 'Conakry');
 
   const uid = Number(info.lastInsertRowid);
-  db.prepare(`INSERT OR REPLACE INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
-              VALUES (?, 1, ?, '07:00', '[]', ?, '[]', datetime('now'))`)
-    .run(uid, phone || '', JSON.stringify([city || 'Conakry']));
-  const user = loadUser(uid);
-  res.status(201).json({ token: createToken(uid), user: publicUser(user) });
+  db.prepare(`
+    INSERT OR REPLACE INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
+    VALUES (?, 1, ?, '07:00', '[]', ?, '[]', datetime('now'))
+  `).run(uid, phone || '', JSON.stringify([city || 'Conakry']));
+
+  res.status(201).json({ token: createToken(uid), user: publicUser(loadUser(uid)) });
 });
 
 router.post('/auth/login', (req, res) => {
@@ -124,7 +123,13 @@ router.put('/profile', requireAuth, (req, res) => {
 router.get('/jobs/meta', (req, res) => {
   const domains = db.prepare('SELECT DISTINCT domain FROM jobs WHERE is_active=1 ORDER BY domain').all().map((r) => r.domain);
   const cities = db.prepare('SELECT DISTINCT city FROM jobs WHERE is_active=1 ORDER BY city').all().map((r) => r.city);
-  res.json({ cities, domains, contracts: CONTRACT_TYPES, skills: [...new Set(ALL_SKILLS)], allCities: CITIES, education: EDUCATION_ORDER });
+  res.json({
+    cities, domains,
+    contracts: CONTRACT_TYPES,
+    skills: [...new Set(ALL_SKILLS)],
+    allCities: CITIES,
+    education: EDUCATION_ORDER,
+  });
 });
 
 router.get('/jobs', (req, res) => {
@@ -136,8 +141,7 @@ router.get('/jobs', (req, res) => {
 
 router.get('/jobs/recommended', requireAuth, (req, res) => {
   const profile = publicUser(req.user);
-  const jobs = searchJobs({});
-  const scored = withMatch(profile, jobs)
+  const scored = withMatch(profile, searchJobs({}))
     .filter((j) => j.match)
     .sort((a, b) => b.match.score - a.match.score);
   const limit = Math.max(1, Math.min(12, Number(req.query.limit) || 4));
@@ -150,10 +154,9 @@ router.get('/jobs/:id(\\d+)', (req, res) => {
   const job = jobRow(row);
   const uid = getUserFromRequest(req);
   const profile = uid ? publicUser(loadUser(uid)) : null;
-  let applied = false;
-  if (uid) {
-    applied = !!db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(uid, job.id);
-  }
+  const applied = uid
+    ? !!db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(uid, job.id)
+    : false;
   res.json({ job: { ...job, match: profile ? computeMatch(profile, job) : null }, applied });
 });
 
@@ -171,13 +174,15 @@ router.get('/applications', requireAuth, (req, res) => {
     company: { name: r.company_name, color: r.company_color },
     status: r.status, coverLetter: r.cover_letter, createdAt: r.created_at,
   }));
-  const stats = {
-    total: applications.length,
-    pending: applications.filter((a) => a.status === 'En attente').length,
-    inProgress: applications.filter((a) => a.status === 'En cours').length,
-    accepted: applications.filter((a) => a.status === 'Acceptée').length,
-  };
-  res.json({ applications, stats });
+  res.json({
+    applications,
+    stats: {
+      total: applications.length,
+      pending: applications.filter((a) => a.status === 'En attente').length,
+      inProgress: applications.filter((a) => a.status === 'En cours').length,
+      accepted: applications.filter((a) => a.status === 'Acceptée').length,
+    },
+  });
 });
 
 router.post('/applications', requireAuth, (req, res) => {
@@ -186,8 +191,9 @@ router.post('/applications', requireAuth, (req, res) => {
   if (!job) return res.status(404).json({ error: 'Offre introuvable.' });
   const exists = db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(req.user.id, job.id);
   if (exists) return res.status(409).json({ error: 'Vous avez déjà postulé à cette offre.' });
-  const info = db.prepare(`INSERT INTO applications (user_id, job_id, cover_letter, status) VALUES (?, ?, ?, 'En attente')`)
-    .run(req.user.id, job.id, String(coverLetter || '').slice(0, 4000));
+  const info = db.prepare(`
+    INSERT INTO applications (user_id, job_id, cover_letter, status) VALUES (?, ?, ?, 'En attente')
+  `).run(req.user.id, job.id, String(coverLetter || '').slice(0, 4000));
   res.status(201).json({ id: Number(info.lastInsertRowid), status: 'En attente' });
 });
 
@@ -203,8 +209,10 @@ function loadAlerts(uid) {
   let a = db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
   if (!a) {
     const u = loadUser(uid);
-    db.prepare(`INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts)
-                VALUES (?, 1, ?, '07:00', '[]', ?, '[]')`).run(uid, u.phone || '', JSON.stringify([u.city || 'Conakry']));
+    db.prepare(`
+      INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts)
+      VALUES (?, 1, ?, '07:00', '[]', ?, '[]')
+    `).run(uid, u.phone || '', JSON.stringify([u.city || 'Conakry']));
     a = db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
   }
   return a;
@@ -255,8 +263,12 @@ router.get('/alerts', requireAuth, (req, res) => {
     .map((m) => ({ id: m.id, body: m.body, sentAt: m.sent_at, isRead: !!m.is_read }));
   res.json({
     settings: {
-      enabled: !!a.enabled, phone: a.phone, sendTime: a.send_time,
-      keywords: jget(a.keywords, []), cities: jget(a.cities, []), contracts: jget(a.contracts, []),
+      enabled: !!a.enabled,
+      phone: a.phone,
+      sendTime: a.send_time,
+      keywords: jget(a.keywords, []),
+      cities: jget(a.cities, []),
+      contracts: jget(a.contracts, []),
       lastSentOn: a.last_sent_on,
     },
     messages,
@@ -297,18 +309,6 @@ router.post('/alerts/read', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ================= CONSEILS =================
-router.get('/advice', (req, res) => {
-  const rows = db.prepare('SELECT id, title, category, excerpt, minutes, color FROM advice ORDER BY id').all();
-  res.json({ advice: rows });
-});
-
-router.get('/advice/:id(\\d+)', (req, res) => {
-  const row = db.prepare('SELECT * FROM advice WHERE id = ?').get(Number(req.params.id));
-  if (!row) return res.status(404).json({ error: 'Conseil introuvable.' });
-  res.json({ article: row });
-});
-
 // ================= ENTREPRISES =================
 function companyRow(r, jobCount) {
   return {
@@ -341,6 +341,18 @@ router.get('/companies/:id(\\d+)', (req, res) => {
   const profile = uid ? publicUser(loadUser(uid)) : null;
   const jobs = withMatch(profile, searchJobs({})).filter((j) => j.company && j.company.id === row.id);
   res.json({ company: companyRow(row, jobs.length), jobs });
+});
+
+// ================= CONSEILS =================
+router.get('/advice', (req, res) => {
+  const rows = db.prepare('SELECT id, title, category, excerpt, minutes, color FROM advice ORDER BY id').all();
+  res.json({ advice: rows });
+});
+
+router.get('/advice/:id(\\d+)', (req, res) => {
+  const row = db.prepare('SELECT * FROM advice WHERE id = ?').get(Number(req.params.id));
+  if (!row) return res.status(404).json({ error: 'Conseil introuvable.' });
+  res.json({ article: row });
 });
 
 // ================= DASHBOARD / STATS =================
@@ -382,11 +394,12 @@ router.get('/dashboard', requireAuth, (req, res) => {
 });
 
 router.get('/stats', (req, res) => {
-  const jobs = db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1').get().n;
-  const companies = db.prepare('SELECT COUNT(*) AS n FROM companies').get().n;
-  const cities = db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1').get().n;
-  const users = db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
-  res.json({ jobs, companies, cities, users });
+  res.json({
+    jobs: db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1').get().n,
+    companies: db.prepare('SELECT COUNT(*) AS n FROM companies').get().n,
+    cities: db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1').get().n,
+    users: db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
+  });
 });
 
 export default router;

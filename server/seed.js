@@ -1,4 +1,4 @@
-// Job by blaise — jeu de données de démonstration (entreprises, offres, conseils, utilisateur démo)
+// Job by blaise — jeu de données de démonstration
 import { db, initSchema } from './db.js';
 import { hashPassword } from './auth.js';
 
@@ -88,8 +88,8 @@ const DOMAIN_DESC = {
   },
 };
 
+// titre, index société, ville, pays, contrat, salaire min, max, exp, diplôme, domaine, compétences, jours
 const JOBS = [
-  // title, companyIdx, city, country, contract, salMin, salMax (GNF), expMin, edu, domain, skills, daysAgo
   ['Assistant Administratif', 0, 'Conakry', 'Guinée', 'Temps plein', 3500000, 5000000, 1, 'Bac+2', 'Administration', ['Excel', 'Communication', 'Organisation', 'PowerPoint'], 1],
   ['Chargé de Recrutement', 4, 'Conakry', 'Guinée', 'Temps plein', 5000000, 7000000, 2, 'Bac+3', 'Ressources humaines', ['Recrutement', 'Ressources humaines', 'Communication'], 3],
   ['Comptable Général', 3, 'Conakry', 'Guinée', 'Temps plein', 6000000, 8500000, 3, 'Bac+3', 'Comptabilité', ['Comptabilité', 'Sage', 'Excel', 'SQL'], 2],
@@ -168,7 +168,7 @@ const ADVICE = [
 5. **Des compétences concrètes et lisibles** : Excel, Sage, React, logistique… celles que les offres demandent.
 6. **Zéro faute d’orthographe**. Faites relire par un proche.
 
-Dans Job by blaise, votre profil sert de CV : remplissez-le une fois, postulez en un clic sur toutes les offres à 90 % de matching.`,
+Dans Job by blaise, votre profil sert de CV : remplissez-le une fois, postulez en un clic sur toutes les offres à fort matching.`,
   },
   {
     title: 'Préparer son entretien d’embauche : les 10 questions incontournables',
@@ -180,7 +180,7 @@ Dans Job by blaise, votre profil sert de CV : remplissez-le une fois, postulez e
 
 1. “Présentez-vous.” — 60 secondes : qui vous êtes, ce que vous savez faire, ce que vous cherchez.
 2. “Pourquoi ce poste / cette entreprise ?” — montrez que vous connaissez l’entreprise.
-3. “Quelles sont vos forces / faiblesses ?” — une force prouvée, une faiblesses en cours de progrès.
+3. “Quelles sont vos forces / faiblesses ?” — une force prouvée, une faiblesse en cours de progrès.
 4. “Décrivez un problème que vous avez résolu.” — STAR + résultat chiffré.
 5. “Où vous voyez-vous dans 3 ans ?” — alignez avec le poste.
 6. “Pourquoi devrions-vous vous recruter ?” — 3 arguments mémorables.
@@ -220,13 +220,13 @@ Les offres les plus pertinentes remontent avec un taux de matching affiché : pl
 **Quand ?** Uniquement après l’offre écrite, jamais au premier entretien.
 
 **Comment ?**
-1. Renseignez-vous : les offres Job by blaise affichent des fourchettes réales (ex. Assistant administratif : 3,5 – 5 M GNF).
+1. Renseignez-vous : les offres affichent des fourchettes réelles (ex. Assistant administratif : 3,5 – 5 M GNF).
 2. Chiffrez vos résultats : “J’ai réduit les délais de 20 %”, “J’ai géré 500 000 FCFA de budget”.
 3. Proposez une fourchette (bas-milieu-haut) plutôt qu’un chiffre unique.
 4. Regardez le package complet : transport, prime de responsabilité, formation, horaires.
-5. restez courtois : “Je suis très motivé(e) par ce poste. Sur la base de mon expérience, j’aimerais discuter de la rémunération.”
+5. Restez courtois : “Je suis très motivé(e) par ce poste. Sur la base de mon expérience, j’aimerais discuter de la rémunération.”
 
-Dans les PME et multinationales de Guinée, une négocie préparée fait gagner en moyenne 10 à 20 % de salaire de départ.`,
+Dans les PME et multinationales de Guinée, une négociation préparée fait gagner en moyenne 10 à 20 % de salaire de départ.`,
   },
   {
     title: 'Sortir du chômage : la stratégie 30 jours pour trouver un emploi',
@@ -250,7 +250,7 @@ Dans les PME et multinationales de Guinée, une négocie préparée fait gagner 
 
 **Semaine 4 — Ajustement**
 - Analysez : peu d’entretiens ? → CV. Entretiens sans suite ? → préparation.
-- Testez un nouveau canal : job board, salon de l’emploi, recommendation.
+- Testez un nouveau canal : job board, salon de l’emploi, recommandation.
 
 La régularité bat l’intensité : 1 heure par jour, tous les jours.`,
   },
@@ -260,7 +260,7 @@ La régularité bat l’intensité : 1 heure par jour, tous les jours.`,
     excerpt: 'La structure en 4 phrases qui donne envie au recruteur de vous appeler — même par SMS.',
     minutes: 4,
     color: '#0891B2',
-    content: `Oubliez les 4 pages. Un recruteur guinéen lit 30 secondes maximum. Structurez en 4 mouvements :
+    content: `Oubliez les 4 pages. Un recruteur lit 30 secondes maximum. Structurez en 4 mouvements :
 
 **1. Accroche (1 phrase)** — le poste + votre atout numéro 1.
 “Actuel assistant administratif avec 3 ans d’expérience en gestion de dossiers, je souhaite rejoindre votre équipe à Conakry.”
@@ -281,12 +281,6 @@ Dans Job by blaise, la lettre se joint en un clic à votre candidature depuis la
 export function seed({ force = false } = {}) {
   initSchema();
 
-  // Complète les colonnes « fondée en / taille » sur une base déjà peuplée
-  const backfill = db.prepare(
-    'UPDATE companies SET founded_year = ?, staff_size = ? WHERE name = ? AND founded_year IS NULL'
-  );
-  for (const c of COMPANIES) backfill.run(c[5], c[6], c[0]);
-
   const jobCount = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n;
   if (jobCount > 0 && !force) return { skipped: true, jobs: jobCount };
 
@@ -299,8 +293,7 @@ export function seed({ force = false } = {}) {
   const insCompany = db.prepare(
     'INSERT INTO companies (name, sector, city, description, color, founded_year, staff_size) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
-  const companyIds = [];
-  for (const c of COMPANIES) companyIds.push(Number(insCompany.run(...c).lastInsertRowid));
+  const companyIds = COMPANIES.map((c) => Number(insCompany.run(...c).lastInsertRowid));
 
   const insJob = db.prepare(`
     INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max,
@@ -308,18 +301,18 @@ export function seed({ force = false } = {}) {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `);
   let jobs = 0;
-  const usedTitles = new Set();
-  for (const row of JOBS) {
-    if (!Array.isArray(row)) continue; // garde-fou ligne mal formée
-    const [title, ci, city, country, contract, smin, smax, exp, edu, domain, skills, daysAgo] = row;
+  const used = new Set();
+  for (const [title, ci, city, country, contract, smin, smax, exp, edu, domain, skills, daysAgo] of JOBS) {
     const key = `${title}@${city}`;
-    if (usedTitles.has(key)) continue;
-    usedTitles.add(key);
+    if (used.has(key)) continue;
+    used.add(key);
     const tpl = DOMAIN_DESC[domain] || DOMAIN_DESC.Administration;
-    const description = `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`;
-    const requirements = `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`;
-    insJob.run(companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
-      description, requirements, JSON.stringify(skills), D(daysAgo));
+    insJob.run(
+      companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
+      `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`,
+      `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`,
+      JSON.stringify(skills), D(daysAgo)
+    );
     jobs++;
   }
 
@@ -328,7 +321,7 @@ export function seed({ force = false } = {}) {
   );
   for (const a of ADVICE) insAdvice.run(a.title, a.category, a.excerpt, a.content, a.minutes, a.color);
 
-  // ---- Utilisateur démo : Mamadou Diallo ----
+  // ---- Compte de démonstration : Mamadou Diallo ----
   const email = 'mamadou@jobbyblaise.com';
   const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   let uid;
@@ -336,7 +329,8 @@ export function seed({ force = false } = {}) {
     uid = exists.id;
   } else {
     uid = Number(db.prepare(`
-      INSERT INTO users (email, password_hash, full_name, phone, city, title, bio, education, experience_years, skills, job_types, preferred_cities, cv)
+      INSERT INTO users (email, password_hash, full_name, phone, city, title, bio, education,
+                         experience_years, skills, job_types, preferred_cities, cv)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       email,
@@ -365,21 +359,26 @@ export function seed({ force = false } = {}) {
     ).lastInsertRowid);
   }
 
-  // alertes SMS démo
   db.prepare(`
     INSERT OR REPLACE INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
     VALUES (?, 1, ?, '07:00', ?, ?, ?, datetime('now'))
-  `).run(uid, '+224 622 000 111', JSON.stringify(['assistant', 'administratif', 'logistique']), JSON.stringify(['Conakry']), JSON.stringify(['Temps plein', 'CDD']));
+  `).run(
+    uid,
+    '+224 622 000 111',
+    JSON.stringify(['assistant', 'administratif', 'logistique']),
+    JSON.stringify(['Conakry']),
+    JSON.stringify(['Temps plein', 'CDD'])
+  );
 
-  // candidatures démo
   const demoJobs = db.prepare('SELECT id FROM jobs ORDER BY RANDOM() LIMIT 4').all();
   const statuses = ['En attente', 'En cours', 'Acceptée', 'Refusée'];
   demoJobs.forEach((j, i) => {
-    db.prepare('INSERT OR IGNORE INTO applications (user_id, job_id, cover_letter, status, created_at) VALUES (?, ?, ?, ?, ?)')
-      .run(uid, j.id, 'Madame, Monsieur,\n\nVivement motivé(e) par ce poste, je vous prie de trouver ma candidature ci-jointe.\n\nCordialement,', statuses[i % statuses.length], D(i + 1));
+    db.prepare(`
+      INSERT OR IGNORE INTO applications (user_id, job_id, cover_letter, status, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(uid, j.id, 'Madame, Monsieur,\n\nVivement motivé(e) par ce poste, je vous prie de trouver ma candidature ci-jointe.\n\nCordialement,', statuses[i % statuses.length], D(i + 1));
   });
 
-  // SMS de démonstration
   const insSms = db.prepare('INSERT INTO sms_messages (user_id, body, sent_at, is_read) VALUES (?, ?, ?, ?)');
   insSms.run(uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0);
   insSms.run(uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1);

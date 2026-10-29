@@ -1,5 +1,5 @@
-// Job by blaise — moteur de matching profil ↔ offre
-import { educationRank, jget } from './db.js';
+// Job by blaise — moteur de matching profil ↔ offre + complétion du profil
+import { educationRank } from './db.js';
 
 const WEIGHTS = {
   skills: 0.40,
@@ -19,16 +19,16 @@ function skillsScore(profileSkills, jobSkills) {
   const set = new Set(profileSkills.map((s) => s.toLowerCase()));
   const hits = jobSkills.filter((s) => set.has(s.toLowerCase())).length;
   const coverage = hits / jobSkills.length;
-  // bonus si le candidat possède plus de compétences que demandées
-  const extra = Math.min(0.15, Math.max(0, (profileSkills.length - jobSkills.length)) * 0.02);
+  const extra = Math.min(0.15, Math.max(0, profileSkills.length - jobSkills.length) * 0.02);
   return clamp(Math.round((coverage + extra * (coverage > 0 ? 1 : 0)) * 100), 0, 100);
 }
 
 function cityScore(profileCity, preferredCities, jobCity) {
   if (!jobCity) return 60;
-  const wanted = [profileCity, ...(preferredCities || [])].filter(Boolean).map((c) => c.toLowerCase());
-  if (wanted.includes(String(jobCity).toLowerCase())) return 100;
-  return 45; // ailleurs = score neutre faible
+  const wanted = [profileCity, ...(preferredCities || [])]
+    .filter(Boolean)
+    .map((c) => c.toLowerCase());
+  return wanted.includes(String(jobCity).toLowerCase()) ? 100 : 45;
 }
 
 function contractScore(jobTypes, contract) {
@@ -39,10 +39,8 @@ function contractScore(jobTypes, contract) {
 function educationScore(userEdu, minEdu) {
   const u = educationRank(userEdu);
   const m = educationRank(minEdu);
-  if (m === 0) return 100;
-  if (u >= m) return 100;
-  const gap = m - u;
-  return clamp(100 - gap * 30, 20, 100);
+  if (m === 0 || u >= m) return 100;
+  return clamp(100 - (m - u) * 30, 20, 100);
 }
 
 function experienceScore(years, minYears) {
@@ -62,10 +60,8 @@ export function computeMatch(profile, job) {
     { key: 'education', label: 'Niveau d’études', weight: WEIGHTS.education, score: educationScore(profile.education, job.educationMin) },
     { key: 'experience', label: 'Expérience', weight: WEIGHTS.experience, score: experienceScore(profile.experienceYears, job.experienceMin) },
   ];
-  const total = Math.round(
-    breakdown.reduce((acc, b) => acc + b.score * b.weight, 0)
-  );
-  // plafonné à 97 % : un match parfait à 100 % paraît artificiel aux recruteurs
+  const total = Math.round(breakdown.reduce((acc, b) => acc + b.score * b.weight, 0));
+  // plafonné à 97 % : un match à 100 % paraît artificiel
   return { score: clamp(total, 0, 97), breakdown };
 }
 
@@ -79,10 +75,8 @@ export function profileCompletion(profile) {
     { id: 'cv', label: 'CV optimal', done: !!(cv.summary && cv.summary.length > 30 && experiences.length >= 1) },
     { id: 'skills', label: 'Compétences renseignées', done: (profile.skills || []).length >= 3 },
     { id: 'prefs', label: 'Préférences définies', done: (profile.jobTypes || []).length >= 1 },
-    { id: 'edu', label: 'Formation & expérience', done: !!profile.education && (profile.experienceYears || 0) >= 0 && !!profile.education.length },
+    { id: 'edu', label: 'Formation & expérience', done: !!profile.education },
   ];
   const done = checks.filter((c) => c.done).length;
   return { percent: Math.round((done / checks.length) * 100), checks };
 }
-
-export { jget };

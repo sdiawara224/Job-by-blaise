@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
-import JobCard from '../components/JobCard.jsx';
 import CompanyCard from '../components/CompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
@@ -169,7 +168,6 @@ function SearchIllustration() {
   );
 }
 
-/* ---------- Section « CV builder » ---------- */
 function CvBuilderMock() {
   return (
     <div className="cvmock" aria-hidden="true">
@@ -206,7 +204,6 @@ function CvBuilderMock() {
   );
 }
 
-/* ---------- Étapes ---------- */
 const STEPS = [
   { n: '1', title: 'Créez votre profil facilement', text: 'Créez votre compte en quelques clics et remplissez votre profil pour indiquer votre situation et vos aspirations.' },
   { n: '2', title: 'Concevez un CV percutant', text: 'Utilisez nos rubriques optimisées pour créer un CV moderne, professionnel et attractif en quelques minutes.' },

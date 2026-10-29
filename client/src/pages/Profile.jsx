@@ -33,7 +33,6 @@ export default function Profile() {
 
   const set = (k) => (e) => setProfile({ ...profile, [k]: e.target.value });
   const cv = profile.cv && Object.keys(profile.cv).length ? profile.cv : emptyCv;
-
   const setCv = (patch) => setProfile({ ...profile, cv: { ...cv, ...patch } });
 
   const save = async () => {

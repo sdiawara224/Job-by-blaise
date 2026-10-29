@@ -1,4 +1,4 @@
-// Job by blaise — base de données SQLite (node:sqlite)
+// Job by blaise — base de données SQLite (node:sqlite, zéro dépendance)
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -103,22 +103,10 @@ export function initSchema() {
       color TEXT DEFAULT '#2E6BFF'
     );
   `);
-
-  // Migration : colonnes entreprises ajoutées après-coup (bases déjà créées)
-  const cols = db.prepare('PRAGMA table_info(companies)').all().map((c) => c.name);
-  if (!cols.includes('founded_year')) db.exec('ALTER TABLE companies ADD COLUMN founded_year INTEGER');
-  if (!cols.includes('staff_size')) db.exec('ALTER TABLE companies ADD COLUMN staff_size TEXT');
 }
 
 export const EDUCATION_ORDER = [
-  'Sans diplôme',
-  'BEPC',
-  'Bac',
-  'Bac+1',
-  'Bac+2',
-  'Bac+3',
-  'Bac+5',
-  'Doctorat',
+  'Sans diplôme', 'BEPC', 'Bac', 'Bac+1', 'Bac+2', 'Bac+3', 'Bac+5', 'Doctorat',
 ];
 
 export function educationRank(level) {
@@ -130,14 +118,13 @@ export const CONTRACT_TYPES = ['Temps plein', 'Temps partiel', 'CDD', 'Stage', '
 
 export const ALL_SKILLS = [
   'Excel', 'Comptabilité', 'Sage', 'Communication', 'Réseaux', 'JavaScript',
-  'React', 'Python', 'SQL', 'Marketing digital', 'Vente', 'Négociation',
+  'React', 'Python', 'SQL', 'CSS', 'Marketing digital', 'Vente', 'Négociation',
   'Gestion de projet', 'Ressources humaines', 'Recrutement', 'AutoCAD',
   'Maintenance', 'Électricité', 'Anglais', 'Français', 'Logistique',
   'Transport', 'Soins infirmiers', 'Analyse de données', 'WordPress',
   'SEO', 'Bases de données', 'Linux', 'Service client', 'Organisation',
   'Rédaction', 'Design graphique', 'PowerPoint', 'Mécanique', 'Climatisation',
-  'HACCP', 'Agriculture', 'Sécurité', 'Data visualization', 'Cisco / TCP-IP',
-  'CSS', 'Formation', 'Comptabilité', 'Audit',
+  'HACCP', 'Agriculture', 'Sécurité', 'Formation', 'Audit', 'Cisco / TCP-IP',
 ];
 
 export const CITIES = [
@@ -145,7 +132,6 @@ export const CITIES = [
   'Dakar', 'Abidjan', 'Bamako', 'Douala', 'Lomé', 'Ouagadougou',
 ];
 
-// ---------- helpers JSON ----------
 export const jget = (v, fallback) => {
   try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 };
@@ -173,7 +159,13 @@ export function publicUser(row) {
 export function jobRow(row) {
   if (!row) return null;
   const company = row.company_name
-    ? { id: row.company_id, name: row.company_name, sector: row.company_sector, city: row.company_city, color: row.company_color }
+    ? {
+        id: row.company_id,
+        name: row.company_name,
+        sector: row.company_sector,
+        city: row.company_city,
+        color: row.company_color,
+      }
     : null;
   return {
     id: row.id,

@@ -1,8 +1,8 @@
 node_modules/
 dist/
 database/
+image-search/
+*.zip
 *.log
 .DS_Store
 .env
-*.zip
-image-search/

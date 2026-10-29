@@ -1,134 +1,131 @@
-// Smoke test : charge le bundle buildé dans jsdom et détecte les erreurs runtime
-// usage : node smoke-test.mjs [route]   (défaut : /)
-import fs from 'node:fs';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { JSDOM } from 'jsdom';
+// Smoke test — Job by blaise : 13 endpoints critiques avec payloads réalistes.
+// Usage : node smoke-test.mjs   (le serveur doit tourner sur :3001, une base seedée)
+import { readFileSync, writeFileSync } from 'node:fs';
 
-const ROUTE = process.argv[2] || '/';
-const html = fs.readFileSync('dist/index.html', 'utf8');
-const jsFile = fs.readdirSync('dist/assets').find((f) => f.endsWith('.js'));
+const BASE = process.env.BASE || 'http://127.0.0.1:3001';
+const TOKEN_FILE = '/tmp/jobbyblaise-smoke-token.json';
 
-const dom = new JSDOM(html.replace(/<script[^>]*><\/script>/g, ''), {
-  url: `http://localhost:3001${ROUTE}`,
-  pretendToBeVisual: true,
-  runScripts: 'outside-only',
-});
-
-const { window } = dom;
-const errors = [];
-if (process.env.WITH_TOKEN) window.localStorage.setItem('jobbyblaise_token', 'fake-token-jwt');
-
-// globals navigateur requis par React
-for (const k of ['window', 'document', 'navigator', 'location', 'history',
-  'HTMLElement', 'Element', 'Node', 'SVGElement', 'CustomEvent', 'Event',
-  'KeyboardEvent', 'MouseEvent', 'getComputedStyle', 'requestAnimationFrame',
-  'cancelAnimationFrame', 'localStorage', 'sessionStorage', 'MutationObserver']) {
-  try { globalThis[k] = window[k] ?? globalThis[k]; } catch { /* read-only */ }
-}
-globalThis.window = window;
-globalThis.document = window.document;
-const define = (k, v) => {
-  try { Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true }); }
-  catch { try { globalThis[k] = v; } catch { /* ignore */ } }
-};
-define('navigator', window.navigator);
-define('localStorage', window.localStorage);
-define('sessionStorage', window.sessionStorage);
-define('location', window.location);
-define('history', window.history);
-define('getComputedStyle', window.getComputedStyle.bind(window));
-define('MutationObserver', window.MutationObserver);
-define('requestAnimationFrame', (cb) => setTimeout(() => cb(Date.now()), 16));
-define('cancelAnimationFrame', (t) => clearTimeout(t));
-define('fetch', async (url) => {
-  const u = String(url);
-  const user = {
-    id: 1, email: 'mamadou@jobbyblaise.com', fullName: 'Mamadou Diallo',
-    phone: '+224 622 000 111', city: 'Conakry', title: 'Assistant Administratif',
-    bio: '…', education: 'Bac+2', experienceYears: 4,
-    skills: ['Excel', 'Organisation'], jobTypes: ['Temps plein'],
-    preferredCities: ['Conakry'], cv: { summary: '…', experiences: [{ a: 1 }], education: [] },
-  };
-  const job = {
-    id: 1, title: 'Assistant Administratif', city: 'Conakry', country: 'Guinée',
-    contract: 'Temps plein', salaryMin: 3500000, salaryMax: 5000000,
-    experienceMin: 1, educationMin: 'Bac+2', domain: 'Administration',
-    description: 'Desc.', requirements: 'Req.', skills: ['Excel'], postedAt: '2026-10-28 10:00:00',
-    company: { id: 1, name: 'Ghapia Logistics', sector: 'Transport', city: 'Conakry', color: '#2E6BFF' },
-    match: { score: 91, breakdown: [{ key: 'skills', label: 'Compétences', weight: 0.4, score: 95 }] },
-  };
-  const completion = {
-    percent: 85,
-    checks: [{ id: 'a', label: 'CV optimal', done: true }, { id: 'b', label: 'Préférences définies', done: false }],
-  };
-  let body = {};
-  if (u.includes('/auth/me')) body = { user };
-  else if (u.includes('/jobs/meta')) body = { cities: ['Conakry'], domains: ['Administration'], contracts: ['Temps plein'], skills: ['Excel'], allCities: ['Conakry', 'Kankan'], education: ['Bac'] };
-  else if (u.includes('/jobs/recommended')) body = { jobs: [{ ...job }, { ...job, id: 2 }] };
-  else if (/\/jobs\/\d+/.test(u)) body = { job, applied: false };
-  else if (u.includes('/jobs?')) body = { jobs: [job], total: 1 };
-  else if (u.includes('/companies?') || /\/companies$/.test(u.split('?')[0])) body = {
-    companies: [1, 2, 3, 4, 5, 6].map((i) => ({
-      id: i, name: `Entreprise ${i}`, sector: 'Technologie', city: 'Conakry',
-      description: 'Desc.', color: '#2E6BFF', foundedYear: 2020,
-      staffSize: '11 à 50 collaborateurs', jobCount: i, rating: 4.5,
-    })),
-  };
-  else if (/\/companies\/\d+/.test(u)) body = {
-    company: {
-      id: 1, name: 'Ghapia Logistics', sector: 'Transport', city: 'Conakry',
-      description: 'Desc.', color: '#2E6BFF', foundedYear: 2016,
-      staffSize: '51 à 200 collaborateurs', jobCount: 1, rating: 4.7,
+function bodyFor(method, path, payload) {
+  if (method === 'GET' || method === 'HEAD') return undefined;
+  const stubs = {
+    'POST /api/auth/register': {
+      fullName: 'Fatoumata Diallo', email: `smoke-${Date.now()}@jobbyblaise.com`,
+      phone: '+224 622 000 111', city: 'Conakry', password: 'smoketest123',
     },
-    jobs: [job],
+    'POST /api/auth/login': { email: 'mamadou@jobbyblaise.com', password: 'demo1234' },
+    'POST /api/profile': { fullName: 'Mamadou Diallo', phone: '+224 621 44 55 66', city: 'Conakry' },
+    'PUT /api/profile': {
+      fullName: 'Mamadou Diallo', phone: '+224 621 44 55 66', city: 'Conakry',
+      title: 'Assistant Administratif', bio: 'Organisé et rigoureux, 4 ans d’expérience en PME à Conakry.',
+      education: 'Bac+2', experienceYears: 4,
+      skills: ['Excel', 'Organisation', 'Communication', 'Bureau', 'Gestion'],
+      jobTypes: ['Temps plein', 'CDD'], preferredCities: ['Conakry'],
+      cv: {
+        summary: 'Assistant administratif confirmé, maîtrise Excel et gestion de la relation client.',
+        experiences: [{ role: 'Assistant administratif', org: 'SARL Camara & Fils', period: '2022 – 2025', detail: 'Suivi des commandes et gestion des archives.' }],
+        education: [{ level: 'BTS Gestion', org: 'Institut Supérieur de Commerce', period: '2019 – 2021' }],
+      },
+    },
+    'POST /api/applications': { jobId: 1, coverLetter: 'Motivé par ce poste, je souhaite contribuer à vos équipes.' },
+    'PUT /api/alerts': { enabled: true, phone: '+224 621 44 55 66', sendTime: '07:00', cities: ['Conakry'], contracts: ['Temps plein'], keywords: ['assistant'] },
+    'POST /api/alerts/read': {},
+    'POST /api/alerts/test': {},
   };
-  else if (u.includes('/stats')) body = { jobs: 60, companies: 18, cities: 10, users: 1 };
-  else if (u.includes('/dashboard')) body = {
-    greeting: { fullName: user.fullName, city: user.city },
-    recommended: [{ ...job }], completion,
-    applications: { total: 4, pending: 1, inProgress: 1, accepted: 1 },
-    unreadSms: 1, lastSms: { id: 1, body: 'Job by blaise: …', sentAt: '2026-10-29 07:00:00' },
-    alertsEnabled: true, alertsTime: '07:00',
-  };
-  else if (u.includes('/profile')) body = { profile: user, completion };
-  else if (u.includes('/applications')) body = {
-    applications: [{ id: 1, jobId: 1, title: 'Assistant', city: 'Conakry', contract: 'Temps plein', company: { name: 'Ghapia', color: '#2E6BFF' }, status: 'En cours', coverLetter: '', createdAt: '2026-10-28 10:00:00' }],
-    stats: { total: 1, pending: 0, inProgress: 1, accepted: 0 },
-  };
-  else if (u.includes('/alerts')) body = {
-    settings: { enabled: true, phone: user.phone, sendTime: '07:00', keywords: [], cities: ['Conakry'], contracts: [], lastSentOn: '' },
-    messages: [{ id: 1, body: 'Job by blaise: Bonjour Mamadou, …', sentAt: '2026-10-29 07:00:00', isRead: false }],
-    unread: 1,
-  };
-  else if (/\/advice\/\d+/.test(u)) body = { article: { id: 3, title: 'Alertes SMS', category: 'Alertes SMS', excerpt: '…', minutes: 3, color: '#00A868', content: 'Texte.\n\n1. **Un** point\n- une puce' } };
-  else if (u.includes('/advice')) body = { advice: [{ id: 1, title: 'CV', category: 'CV', excerpt: '…', minutes: 5, color: '#2E6BFF' }] };
-  else if (u.includes('/auth/login') || u.includes('/auth/register')) body = { token: 'fake', user };
-  return { ok: true, status: 200, json: async () => body };
-});
-
-window.addEventListener('error', (e) => errors.push('window.onerror: ' + (e.error?.stack || e.message)));
-process.on('uncaughtException', (e) => errors.push('uncaught: ' + e.stack));
-process.on('unhandledRejection', (e) => errors.push('unhandledRejection: ' + (e?.stack || e)));
-const origErr = console.error.bind(console);
-console.error = (...args) => { errors.push('console.error: ' + args.map(String).join(' ').slice(0, 900)); origErr(...args); };
-
-const codePath = pathToFileURL(path.join('dist', 'assets', jsFile)).href;
-try {
-  await import(codePath);
-} catch (e) {
-  errors.push('import: ' + e.stack);
+  return stubs[`${method} ${path}`] ?? payload ?? {};
 }
 
-// laisse React monter + les effets s'exécuter
-await new Promise((r) => setTimeout(r, 600));
+const endpoints = [
+  ['POST', '/api/auth/register'],
+  ['POST', '/api/auth/login'],
+  ['GET', '/api/jobs'],
+  ['GET', '/api/jobs/meta'],
+  ['GET', '/api/jobs/1'],
+  ['GET', '/api/companies'],
+  ['GET', '/api/companies/1'],
+  ['GET', '/api/dashboard'],
+  ['PUT', '/api/profile'],
+  ['POST', '/api/applications'],
+  ['GET', '/api/advice'],
+  ['GET', '/api/advice/1'],
+  ['PUT', '/api/alerts'],
+  ['POST', '/api/alerts/test'],
+  ['GET', '/api/stats'],
+];
 
-const root = window.document.getElementById('root');
-const len = root ? root.innerHTML.length : -1;
-const realErrors = errors.filter((e) => !e.includes('act(')); // bruits React act() connus
-console.log(`[${ROUTE}] root HTML: ${len} octets | erreurs: ${realErrors.length}`);
-if (realErrors.length) {
-  realErrors.slice(0, 4).forEach((e) => console.log('---\n' + e));
-  process.exit(1);
+let token = '';
+if (process.env.WITH_TOKEN === '1') {
+  try {
+    token = JSON.parse(readFileSync(TOKEN_FILE, 'utf8')).token || '';
+  } catch {}
+  if (!token) {
+    const res = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'mamadou@jobbyblaise.com', password: 'demo1234' }),
+    });
+    const data = await res.json();
+    token = data.token;
+    writeFileSync(TOKEN_FILE, JSON.stringify({ token }));
+  }
 }
-if (len < 200) { console.log('ERREUR: rendu quasi vide !'); process.exit(1); }
+
+let pass = 0;
+let fail = 0;
+
+for (const [method, path] of endpoints) {
+  try {
+    const headers = { 'content-type': 'application/json' };
+    if (token) headers.authorization = `Bearer ${token}`;
+    const payload = bodyFor(method, path);
+    const res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+    const text = await res.text();
+    let ok = res.ok;
+    if (!ok && res.status === 409 && path === '/api/applications') {
+      // déjà postulé à l'offre 1 = l'endpoint fonctionne (idempotent)
+      ok = true;
+      console.log(`✓ ${method} ${path} → 409 (déjà postulé, idempotent)`);
+    }
+    if (!ok && token && res.status === 401) {
+      // token expiré onboarding : on retente une fois via login
+      const r2 = await fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'mamadou@jobbyblaise.com', password: 'demo1234' }),
+      });
+      if (r2.ok) {
+        token = (await r2.json()).token;
+        writeFileSync(TOKEN_FILE, JSON.stringify({ token }));
+        const h2 = { 'content-type': 'application/json', authorization: `Bearer ${token}` };
+        const p2 = bodyFor(method, path);
+        const res2 = await fetch(`${BASE}${path}`, { method, headers: h2, body: p2 === undefined ? undefined : JSON.stringify(p2) });
+        ok = res2.ok;
+      }
+    }
+    if (ok) pass++;
+    else {
+      fail++;
+      console.error(`✗ ${method} ${path} → HTTP ${res.status} :: ${text.slice(0, 180)}`);
+      continue;
+    }
+    // petite validation de contenu
+    const j = text ? JSON.parse(text) : {};
+    if (path === '/api/jobs' && !(j.jobs || []).length) throw new Error('jobs vide');
+    if (path === '/api/jobs/meta' && !(j.cities || []).length) throw new Error('meta vide');
+    if (path === '/api/jobs/1' && !j.job) throw new Error('job manquant');
+    if (path === '/api/companies' && !(j.companies || []).length) throw new Error('companies vide');
+    if (path === '/api/advice' && !(j.advice || []).length) throw new Error('advice vide');
+    if (path === '/api/dashboard' && !j.greeting) throw new Error('dashboard incomplet');
+    if (path === '/api/profile' && typeof j.completion?.percent !== 'number') throw new Error('completion manquante');
+    console.log(`✓ ${method} ${path} → 200`);
+  } catch (e) {
+    fail++;
+    console.error(`✗ ${method} ${path} :: ${e.message}`);
+  }
+}
+
+console.log(`\nSmoke: ${pass} OK, ${fail} échec(s) sur ${endpoints.length} endpoints.`);
+process.exit(fail ? 1 : 0);

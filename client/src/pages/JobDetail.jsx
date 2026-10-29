@@ -185,7 +185,7 @@ export default function JobDetail({ inApp = false }) {
 
             <ApplyCard job={job} applied={applied} onApplied={load} />
 
-            <div className="card company-card">
+            <div className="card company-card-detail">
               <div className="company-avatar" style={{ background: c.color || '#2E6BFF' }}>
                 {(c.name || '?').slice(0, 2).toUpperCase()}
               </div>

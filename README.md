@@ -1,135 +1,109 @@
-# Job by blaise 💼
+# Job by blaise 🇬🇳
 
-> **Trouve les offres qui te correspondent.** — Plateforme d'emploi Guinée & Afrique de l'Ouest :
-> offres d'emploi, CV, matching intelligent et **alertes SMS chaque matin à 7h00**.
-> *Le bon emploi. Au bon moment.*
+> **Le bon emploi. Au bon moment.**
+> Plateforme d'emploi française pour la Guinée et l'Afrique de l'Ouest : offres, matching, CV, alertes SMS matinales.
 
-Application full-stack complète : **frontend React**, **backend Express API** et **base de données SQLite**.
+![stack](https://img.shields.io/badge/stack-React%20%2B%20Express%20%2B%20SQLite-blue) ![license](https://img.shields.io/badge/licence-MIT-green)
 
 ---
 
 ## ✨ Fonctionnalités
 
-### Espace candidat (`/app`)
-| Module | Description |
+- **Landing page** structurée en 7 sections : hero + maquette dashboard + bandeau de stats, dernières offres, entreprises, « CV en 3 clics », recherche poste+ville, 3 étapes + builder CV, CTA final & footer.
+- **Recherche d'emploi** `/jobs` : filtres ville / contrat / domaine, tri récent ou salaire, et **% de match** calculé pour chaque profil.
+- **Fiches offres** `/jobs/:id` : description, compétences, bandeau détaillé du matching (score global + détail par dimension), candidature en un clic avec lettre de motivation.
+- **Entreprises** `/entreprises` + fiches : note, secteur, ville, historique de fondation, offres ouvertes.
+- **Conseils carrière** `/conseils` : articles CV / entretien / SMS / carrière (6 fiches réelles).
+- **Espace candidat** `/app` : dashboard personnalisé (score de profil, recommandations, dernière alerte SMS), offres notées, profil + **CV éditable** (résumé, expériences, formations, compétences), candidatures (statuts), **alertes SMS** (fréquence, heure d'envoi 7h00, mots-clés, villes, contrats) avec **frame téléphone** et SMS de test.
+- **Alertes SMS 7h00** : moteur de génération simulant l'envoi quotidien — `POST /api/alerts/test` pour déclencher une alerte instantanément.
+- **Auth** scrypt + JWT, compte de démo pré-rempli.
+
+## 🧱 Stack
+
+| Couche | Choix |
 |---|---|
-| **Accueil** | Salutation personnalisée, barre de recherche, offres recommandées avec **score de match**, dernière alerte SMS, complétion du profil |
-| **Offres d'emploi** | 60 offres réelles de démo — recherche plein texte, filtres ville / contrat / domaine, tri, **match % calculé pour ton profil** |
-| **Mon profil** | Informations, compétences (tags), préférences (contrats, villes), **CV complet** (résumé, expériences, formations) + jauge de complétion |
-| **Mes candidatures** | Suivi des statuts (En attente / En cours / Acceptée / Refusée), statistiques, retrait |
-| **Mes alertes SMS** | Activation, numéro, heure d'envoi (07:00), mots-clés, villes, contrats + **boîte SMS** (simulation d'envoi quotidien + alerte test) |
-| **Conseils carrière** | Articles pratiques : CV, entretien, négociation salariale, stratégie 30 jours… |
+| Frontend | React 18 + React Router, Vite 5 |
+| Backend | Node.js + Express 4 |
+| Base | SQLite (`node:sqlite`, natif Node 22) |
+| Contenu | Seed script (18 entreprises, 60 offres, 6 conseils) |
 
-### Pages publiques
-- **Landing** (`/`) — structure type Mansa Talents : hero « Transformez votre carrière »
-  (CTA *Trouver un job* / *Créer mon CV*), **les dernières offres d'emploi**, **les
-  entreprises qui recrutent** (note ★, ancienneté, effectif, nb d'offres), **CV en 3 clics**,
-  **recherche poste + ville**, **3 étapes « Rejoignez l'aventure »** avec aperçu du CV builder.
-- **`/jobs`** — annuaire d'offres, **`/jobs/:id`** — détail avec **analyse du match**
-  (compétences, localisation, contrat, diplôme, expérience) et candidature en 1 clic.
-- **`/entreprises`** + **`/entreprises/:id`** — annuaire et fiche entreprise avec ses offres.
-- **`/conseils`** — bibliothèque de conseils carrière.
-
-## 🧰 Stack technique
-
-| Couche | Technologie |
-|---|---|
-| Frontend | React 18 + React Router 6 + Vite 5 (CSS maison, 0 dépendance UI) |
-| Backend | Express 4 (Node 22) — API REST `/api/*` |
-| Base de données | **SQLite** (`node:sqlite` natif) — fichier `database/jobbyblaise.db` |
-| Auth | Hash **scrypt** + jetons **HMAC-SHA256** signés (7 jours), 0 dépendance |
-| Matching | Moteur maison pondéré : compétences 40 % · localisation 15 % · contrat 15 % · diplôme 15 % · expérience 15 % (plafond 97 %) |
-| SMS | Simulateur : planificateur quotidien à l'heure choisie + génération à la demande (`POST /api/alerts/test`) |
-
-## 🚀 Démarrage rapide
+## 🚀 Démarrage
 
 ```bash
-npm install        # dépendances
-npm run build      # build du front (client/ → dist/)
-npm start          # serveur sur http://localhost:3001
+npm install
+npm run dev        # client (5173) + API proxy → 3001
 ```
 
-**Compte de démonstration**
+Démo (un clic sur la page de connexion) :
+
 ```
 mamadou@jobbyblaise.com
 demo1234
 ```
 
-### Mode développement (hot-reload)
+## 📦 Build de production
 
 ```bash
-npm run dev:api    # API sur :3001 (auto-seed si base vide)
-npm run dev        # Vite sur :5173 (proxy /api → :3001)
+npm run build      # → dist/
+npm start          # serveur sur 0.0.0.0:3001 (SPA + API)
 ```
 
-### Réinitialiser la base de démo
+Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedée automatiquement** (si aucun fichier n'existe). Pour repartir de zéro : `rm -rf database && npm run seed`.
 
-```bash
-npm run seed       # recrée entreprises, 60 offres, conseils, compte Mamadou
-```
-
-### Tests de fumée (anti « page blanche »)
-
-```bash
-npm run build
-node smoke-test.mjs            # vérifie la page /
-node smoke-test.mjs /jobs      # vérifie n'importe quelle route
-WITH_TOKEN=1 node smoke-test.mjs /app   # simule un utilisateur connecté
-```
-
-Le test charge le bundle dans **jsdom**, intercepte les erreurs React/runtime
-et échoue si une page se rend vide. Toutes les routes du projet sont couvertes.
-
-## 🗄️ Base de données (`database/jobbyblaise.db`)
+## 🗂️ Structure
 
 ```
-users              profil candidat + CV JSON + préférences
-companies          18 entreprises (Conakry, Kankan, Boké, Abidjan, Dakar…)
-jobs               60 offres (salaire GNF, contrat, domaine, compétences JSON)
-applications       candidatures (user ↔ job, statut, lettre)
-alert_settings     alerte SMS : actif, numéro, heure, mots-clés, villes, contrats
-sms_messages       boîte SMS reçue (simulée)
-advice             conseils carrière (markdown léger)
+├── client/            # SPA React
+│   └── src/
+│       ├── components/  # Icon, Logo, Navbar, JobCard, JobsBoard, CompanyCard, MatchRing
+│       ├── pages/       # Landing, Jobs, Entreprises, Conseils, App (dashboard, profil…)
+│       └── styles.css   # design system (bleu #2E6BFF, navy, vert #00A868, ambre #F5A524)
+├── server/
+│   ├── db.js          # schéma + migrations + seed check
+│   ├── seed.js        # 18 entreprises, 60 offres, 6 conseils, compte démo
+│   ├── auth.js        # scrypt + JWT (HS256)
+│   ├── match.js       # moteur de matching pondéré (contrat, ville, compétences, diplôme, expérience)
+│   ├── routes.js      # REST API
+│   └── index.js       # serveur HTTP (SPA dist + API) + scheduler d'alertes 7h00
+├── database/          # SQLite (auto-seed, ignoré par git)
+└── smoke-test.mjs     # test des endpoints critiques
 ```
 
-## 🔌 API REST (extraits)
+## 🔌 API
 
 | Méthode | Route | Description |
 |---|---|---|
-| POST | `/api/auth/register` · `/api/auth/login` | Inscription / connexion → JWT |
-| GET | `/api/jobs?search=&city=&contract=&domain=&sort=` | Offres filtrées (+ match si connecté) |
-| GET | `/api/jobs/:id` | Détail offre + ventilation du score |
-| GET | `/api/jobs/recommended` | Top offres pour le profil connecté |
-| GET/PUT | `/api/profile` | Profil + taux de complétion |
-| GET/POST/DELETE | `/api/applications` | Candidatures |
-| GET/PUT | `/api/alerts` | Préférences + boîte SMS |
-| POST | `/api/alerts/test` | Génère une alerte immédiatement |
-| GET | `/api/dashboard` | Données de la page d'accueil candidat |
-| GET | `/api/advice` · `/api/advice/:id` | Conseils carrière |
-| GET | `/api/stats` | Chiffres pour la landing (offres, entreprises…) |
+| POST | `/api/auth/register` | inscription |
+| POST | `/api/auth/login` | connexion |
+| GET | `/api/auth/me` | profil utilisateur (JWT) |
+| GET/PUT | `/api/profile` | profil + CV + préférences |
+| GET | `/api/jobs` | offres (`search`, `city`, `contract`, `domain`, `sort`) |
+| GET | `/api/jobs/meta` | villes, contrats, domaines, compétences |
+| GET | `/api/jobs/:id` | fiche offre (+ breakdown de match si JWT) |
+| GET | `/api/jobs/recommended` | offres triées par score |
+| GET | `/api/companies` · `/api/companies/:id` | annuaire entreprises |
+| GET/POST | `/api/applications` | candidatures |
+| GET/PUT | `/api/alerts` | préférences d'alerte SMS |
+| POST | `/api/alerts/test` | génère & « envoie » une alerte |
+| GET | `/api/advice` · `/api/advice/:id` | conseils carrière |
+| GET | `/api/dashboard` | données de l'espace candidat |
+| GET | `/api/stats` | statistiques publiques |
 
-## 📁 Structure du projet
+## 🧪 Tests
 
-```
-├── client/                 # Frontend React (Vite)
-│   ├── index.html
-│   └── src/
-│       ├── pages/          # Landing, Jobs, JobDetail, Dashboard, Profile…
-│       ├── components/     # Navbar, JobCard, MatchRing, JobsBoard…
-│       ├── auth.jsx        # contexte d'authentification
-│       ├── api.js          # client HTTP
-│       └── styles.css      # design system Job by blaise
-├── server/
-│   ├── index.js            # serveur Express + planificateur SMS
-│   ├── routes.js           # API REST
-│   ├── db.js               # schéma SQLite + helpers
-│   ├── match.js            # moteur de matching & complétion profil
-│   ├── auth.js             # scrypt + tokens HMAC
-│   └── seed.js             # données de démonstration
-├── database/               # fichier SQLite (gitignoré)
-└── dist/                   # front buildé (gitignoré)
+```bash
+npm run seed        # (re)crée la base
+npm start &         # serveur sur :3001
+npm run test:smoke  # 16 endpoints critiques
 ```
 
----
+## 🎨 Design system
 
-© 2026 Job by blaise — *Plateforme complète : www.jobbyblaise.com*
+- **Bleu primaire** `#2E6BFF` · **Navy** `#0A1B4D` · **Vert** `#00A868` · **Ambre** `#F5A524`
+- Wordmark « Job by **blaise** » + monogramme **J** bleu (favicon)
+- Illustrations SVG inline (CV, recherche) — aucune dépendance d'images externes
+- Alertes simulées « Job by blaise: … » sur le canal `/api/alerts`
+
+## 📄 Licence
+
+MIT — © 2026 Job by blaise (www.jobbyblaise.com)

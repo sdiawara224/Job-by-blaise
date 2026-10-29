@@ -25,7 +25,6 @@ export default function Dashboard() {
 
   return (
     <div className="dash">
-      {/* --- Bandeau d'accueil --- */}
       <section className="dash-hero card">
         <div className="dash-hero-copy">
           <h1>Bonjour {first} 👋</h1>
@@ -59,7 +58,6 @@ export default function Dashboard() {
       </section>
 
       <div className="dash-grid">
-        {/* --- Colonne principale --- */}
         <div className="dash-main">
           <section className="dash-block">
             <div className="block-head">
@@ -106,7 +104,6 @@ export default function Dashboard() {
           </section>
         </div>
 
-        {/* --- Colonne droite --- */}
         <aside className="dash-aside">
           <div className="card profile-score-card">
             <div className="block-head">
