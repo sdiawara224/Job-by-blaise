@@ -1,7 +1,7 @@
-// CarrièreOS — auth : hash scrypt + jetons HMAC signés (zéro dépendance)
+// Job by blaise — auth : hash scrypt + jetons HMAC signés (zéro dépendance)
 import crypto from 'node:crypto';
 
-const SECRET = process.env.CARREIERE_SECRET || 'carriereos-dev-secret-2026';
+const SECRET = process.env.CARREIERE_SECRET || 'jobbyblaise-dev-secret-2026';
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 export function hashPassword(password) {

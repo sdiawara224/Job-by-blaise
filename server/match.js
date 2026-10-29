@@ -1,4 +1,4 @@
-// CarrièreOS — moteur de matching profil ↔ offre
+// Job by blaise — moteur de matching profil ↔ offre
 import { educationRank, jget } from './db.js';
 
 const WEIGHTS = {

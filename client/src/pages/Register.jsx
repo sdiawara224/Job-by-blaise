@@ -38,7 +38,7 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card card">
         <Logo />
-        <h1>Crée ton compte CarrièreOS</h1>
+        <h1>Crée ton compte Job by blaise</h1>
         <p className="muted">5 minutes pour ton profil — puis reçois les offres faites pour toi.</p>
 
         <form onSubmit={submit} className="form">

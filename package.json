@@ -1,7 +1,7 @@
 {
-  "name": "carriereos",
+  "name": "job-by-blaise",
   "version": "1.0.0",
-  "description": "CarrièreOS — Trouve les offres qui te correspondent. Plateforme d'emploi Guinée & Afrique de l'Ouest.",
+  "description": "Job by blaise — Trouve les offres qui te correspondent. Plateforme d'emploi Guinée & Afrique de l'Ouest.",
   "private": true,
   "type": "module",
   "scripts": {

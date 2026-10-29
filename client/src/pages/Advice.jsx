@@ -13,7 +13,7 @@ export default function Advice({ inApp = false }) {
 
   useEffect(() => {
     api('/advice').then((d) => setItems(d.advice)).catch(() => {});
-    document.title = 'Conseils carrière | CarrièreOS';
+    document.title = 'Conseils carrière | Job by blaise';
   }, []);
 
   const filtered = cat ? items.filter((a) => a.category === cat) : items;

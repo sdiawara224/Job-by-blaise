@@ -55,11 +55,11 @@ export default function Login() {
 
         <div className="demo-box">
           <b>Compte de démonstration</b>
-          <code>mamadou@carriereos.com</code>
+          <code>mamadou@jobbyblaise.com</code>
           <code>demo1234</code>
           <button
             type="button" className="link-btn"
-            onClick={() => setForm({ email: 'mamadou@carriereos.com', password: 'demo1234' })}
+            onClick={() => setForm({ email: 'mamadou@jobbyblaise.com', password: 'demo1234' })}
           >
             Pré-remplir →
           </button>

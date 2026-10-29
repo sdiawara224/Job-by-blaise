@@ -10,7 +10,7 @@ export default function Jobs() {
   const search = params.get('search') || '';
 
   useEffect(() => {
-    document.title = search ? `${search} — Offres d'emploi | CarrièreOS` : 'Offres d’emploi en Guinée | CarrièreOS';
+    document.title = search ? `${search} — Offres d'emploi | Job by blaise` : 'Offres d’emploi en Guinée | Job by blaise';
   }, [search]);
 
   return (
@@ -28,8 +28,8 @@ export default function Jobs() {
       </main>
       <footer className="footer footer-slim">
         <div className="container footer-bottom">
-          <span>© 2026 CarrièreOS — Le bon emploi. Au bon moment.</span>
-          <span>www.carriereOS.com/jobs</span>
+          <span>© 2026 Job by blaise — Le bon emploi. Au bon moment.</span>
+          <span>www.jobbyblaise.com/jobs</span>
         </div>
       </footer>
     </div>

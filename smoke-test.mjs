@@ -17,7 +17,7 @@ const dom = new JSDOM(html.replace(/<script[^>]*><\/script>/g, ''), {
 
 const { window } = dom;
 const errors = [];
-if (process.env.WITH_TOKEN) window.localStorage.setItem('carriereos_token', 'fake-token-jwt');
+if (process.env.WITH_TOKEN) window.localStorage.setItem('jobbyblaise_token', 'fake-token-jwt');
 
 // globals navigateur requis par React
 for (const k of ['window', 'document', 'navigator', 'location', 'history',
@@ -44,7 +44,7 @@ define('cancelAnimationFrame', (t) => clearTimeout(t));
 define('fetch', async (url) => {
   const u = String(url);
   const user = {
-    id: 1, email: 'mamadou@carriereos.com', fullName: 'Mamadou Diallo',
+    id: 1, email: 'mamadou@jobbyblaise.com', fullName: 'Mamadou Diallo',
     phone: '+224 622 000 111', city: 'Conakry', title: 'Assistant Administratif',
     bio: '…', education: 'Bac+2', experienceYears: 4,
     skills: ['Excel', 'Organisation'], jobTypes: ['Temps plein'],
@@ -88,7 +88,7 @@ define('fetch', async (url) => {
     greeting: { fullName: user.fullName, city: user.city },
     recommended: [{ ...job }], completion,
     applications: { total: 4, pending: 1, inProgress: 1, accepted: 1 },
-    unreadSms: 1, lastSms: { id: 1, body: 'CarrièreOS: …', sentAt: '2026-10-29 07:00:00' },
+    unreadSms: 1, lastSms: { id: 1, body: 'Job by blaise: …', sentAt: '2026-10-29 07:00:00' },
     alertsEnabled: true, alertsTime: '07:00',
   };
   else if (u.includes('/profile')) body = { profile: user, completion };
@@ -98,7 +98,7 @@ define('fetch', async (url) => {
   };
   else if (u.includes('/alerts')) body = {
     settings: { enabled: true, phone: user.phone, sendTime: '07:00', keywords: [], cities: ['Conakry'], contracts: [], lastSentOn: '' },
-    messages: [{ id: 1, body: 'CarrièreOS: Bonjour Mamadou, …', sentAt: '2026-10-29 07:00:00', isRead: false }],
+    messages: [{ id: 1, body: 'Job by blaise: Bonjour Mamadou, …', sentAt: '2026-10-29 07:00:00', isRead: false }],
     unread: 1,
   };
   else if (/\/advice\/\d+/.test(u)) body = { article: { id: 3, title: 'Alertes SMS', category: 'Alertes SMS', excerpt: '…', minutes: 3, color: '#00A868', content: 'Texte.\n\n1. **Un** point\n- une puce' } };

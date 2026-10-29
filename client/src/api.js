@@ -1,5 +1,5 @@
-// CarrièreOS — client API
-const TOKEN_KEY = 'carriereos_token';
+// Job by blaise — client API
+const TOKEN_KEY = 'jobbyblaise_token';
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));

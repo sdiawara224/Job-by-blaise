@@ -1,4 +1,4 @@
-// CarrièreOS — jeu de données de démonstration (entreprises, offres, conseils, utilisateur démo)
+// Job by blaise — jeu de données de démonstration (entreprises, offres, conseils, utilisateur démo)
 import { db, initSchema } from './db.js';
 import { hashPassword } from './auth.js';
 
@@ -159,7 +159,7 @@ const ADVICE = [
     excerpt: 'Structure, rubriques, longueur : les règles d’or pour que votre CV sorte du lot face aux recruteurs de Conakry.',
     minutes: 5,
     color: '#2E6BFF',
-    content: `Un recruteur passe en moyenne 8 secondes sur un premier CV. Voici la méthode CarrièreOS :
+    content: `Un recruteur passe en moyenne 8 secondes sur un premier CV. Voici la méthode Job by blaise :
 
 1. **Une page, pas plus** (sauf profils seniors). Allez à l’essentiel : postes récents, résultats chiffrés, compétences clés.
 2. **Un titre professionnel clair** en haut : “Assistant Administratif — 3 ans d’expérience” plutôt qu’un simple nom.
@@ -168,7 +168,7 @@ const ADVICE = [
 5. **Des compétences concrètes et lisibles** : Excel, Sage, React, logistique… celles que les offres demandent.
 6. **Zéro faute d’orthographe**. Faites relire par un proche.
 
-Dans CarrièreOS, votre profil sert de CV : remplissez-le une fois, postulez en un clic sur toutes les offres à 90 % de matching.`,
+Dans Job by blaise, votre profil sert de CV : remplissez-le une fois, postulez en un clic sur toutes les offres à 90 % de matching.`,
   },
   {
     title: 'Préparer son entretien d’embauche : les 10 questions incontournables',
@@ -194,18 +194,18 @@ Entraînez-vous à voix haute. Un entretien bien préparé, c’est 80 % de la r
   {
     title: 'Recevoir les alertes SMS emploi chaque matin à 7h00',
     category: 'Alertes SMS',
-    excerpt: 'Comment configurer vos alertes CarrièreOS pour ne manquer aucune offre correspondant à votre profil.',
+    excerpt: 'Comment configurer vos alertes Job by blaise pour ne manquer aucune offre correspondant à votre profil.',
     minutes: 3,
     color: '#00A868',
     content: `Sur mobile, consulter ses alertes le matin change tout : vous postulez avant la foule.
 
-**Dans CarrièreOS → Mes alertes :**
+**Dans Job by blaise → Mes alertes :**
 - Activez l’alerte et indiquez votre numéro guinéen (+224…).
 - Choisissez l’heure : par défaut **07:00**, avant que le trafic de Conakry ne commence.
 - Définissez vos critères : villes (Conakry, Kankan…), types de contrat, mots-clés (comptabilité, dev, logistique…).
 
 **Chaque matin, vous recevez un SMS du type :**
-“CarrièreOS: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil. Postulez → carriereOS.com/jobs”
+“Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil. Postulez → jobbyblaise.com/jobs”
 
 Les offres les plus pertinentes remontent avec un taux de matching affiché : plus vous enrichissez votre profil, plus les alertes sont précises.`,
   },
@@ -220,7 +220,7 @@ Les offres les plus pertinentes remontent avec un taux de matching affiché : pl
 **Quand ?** Uniquement après l’offre écrite, jamais au premier entretien.
 
 **Comment ?**
-1. Renseignez-vous : les offres CarrièreOS affichent des fourchettes réales (ex. Assistant administratif : 3,5 – 5 M GNF).
+1. Renseignez-vous : les offres Job by blaise affichent des fourchettes réales (ex. Assistant administratif : 3,5 – 5 M GNF).
 2. Chiffrez vos résultats : “J’ai réduit les délais de 20 %”, “J’ai géré 500 000 FCFA de budget”.
 3. Proposez une fourchette (bas-milieu-haut) plutôt qu’un chiffre unique.
 4. Regardez le package complet : transport, prime de responsabilité, formation, horaires.
@@ -236,7 +236,7 @@ Dans les PME et multinationales de Guinée, une négocie préparée fait gagner 
     color: '#DB2777',
     content: `**Semaine 1 — Fondations**
 - Clarifiez votre cible : 2-3 types de postes, villes envisagées.
-- Mettez à jour votre profil CarrièreOS à 100 % (CV, compétences, préférences).
+- Mettez à jour votre profil Job by blaise à 100 % (CV, compétences, préférences).
 - Activez les alertes SMS 7h00.
 
 **Semaine 2 — Visibilité**
@@ -274,7 +274,7 @@ La régularité bat l’intensité : 1 heure par jour, tous les jours.`,
 **4. Conclusion (1 phrase)** — disponibilité + enthousiasme.
 “Disponible immédiatement, je serais ravi(e) d’échanger avec vous.”
 
-Dans CarrièreOS, la lettre se joint en un clic à votre candidature depuis la page de l’offre.`,
+Dans Job by blaise, la lettre se joint en un clic à votre candidature depuis la page de l’offre.`,
   },
 ];
 
@@ -329,7 +329,7 @@ export function seed({ force = false } = {}) {
   for (const a of ADVICE) insAdvice.run(a.title, a.category, a.excerpt, a.content, a.minutes, a.color);
 
   // ---- Utilisateur démo : Mamadou Diallo ----
-  const email = 'mamadou@carriereos.com';
+  const email = 'mamadou@jobbyblaise.com';
   const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   let uid;
   if (exists) {
@@ -381,9 +381,9 @@ export function seed({ force = false } = {}) {
 
   // SMS de démonstration
   const insSms = db.prepare('INSERT INTO sms_messages (user_id, body, sent_at, is_read) VALUES (?, ?, ?, ?)');
-  insSms.run(uid, 'CarrièreOS: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → carriereOS.com/jobs', D(1), 0);
-  insSms.run(uid, 'CarrièreOS: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → carriereOS.com/jobs', D(2), 1);
-  insSms.run(uid, 'CarrièreOS: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → carriereOS.com/jobs', D(3), 1);
+  insSms.run(uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0);
+  insSms.run(uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1);
+  insSms.run(uid, 'Job by blaise: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → jobbyblaise.com/jobs', D(3), 1);
 
   return { skipped: false, jobs };
 }

@@ -31,7 +31,7 @@ export default function AdviceDetail({ inApp = false }) {
   }, [id]);
 
   useEffect(() => {
-    if (art) document.title = `${art.title} | CarrièreOS`;
+    if (art) document.title = `${art.title} | Job by blaise`;
   }, [art]);
 
   if (err) return <div className="page-loader">{err}</div>;
@@ -51,7 +51,7 @@ export default function AdviceDetail({ inApp = false }) {
           <h1>{art.title}</h1>
           <div className="article-meta">
             <span><Icon name="clock" size={14} /> {art.minutes} min de lecture</span>
-            <span>· CarrièreOS Équipe</span>
+            <span>· Job by blaise Équipe</span>
           </div>
           <div className="article-body">
             {renderContent(art.content)}
@@ -68,8 +68,8 @@ export default function AdviceDetail({ inApp = false }) {
       {!inApp && (
         <footer className="footer footer-slim">
           <div className="container footer-bottom">
-            <span>© 2026 CarrièreOS — Le bon emploi. Au bon moment.</span>
-            <span>www.carriereOS.com/jobs</span>
+            <span>© 2026 Job by blaise — Le bon emploi. Au bon moment.</span>
+            <span>www.jobbyblaise.com/jobs</span>
           </div>
         </footer>
       )}

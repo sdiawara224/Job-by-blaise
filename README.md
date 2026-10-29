@@ -1,4 +1,4 @@
-# CarrièreOS 💼
+# Job by blaise 💼
 
 > **Trouve les offres qui te correspondent.** — Plateforme d'emploi Guinée & Afrique de l'Ouest :
 > offres d'emploi, CV, matching intelligent et **alertes SMS chaque matin à 7h00**.
@@ -36,7 +36,7 @@ Application full-stack complète : **frontend React**, **backend Express API** e
 |---|---|
 | Frontend | React 18 + React Router 6 + Vite 5 (CSS maison, 0 dépendance UI) |
 | Backend | Express 4 (Node 22) — API REST `/api/*` |
-| Base de données | **SQLite** (`node:sqlite` natif) — fichier `database/carriereos.db` |
+| Base de données | **SQLite** (`node:sqlite` natif) — fichier `database/jobbyblaise.db` |
 | Auth | Hash **scrypt** + jetons **HMAC-SHA256** signés (7 jours), 0 dépendance |
 | Matching | Moteur maison pondéré : compétences 40 % · localisation 15 % · contrat 15 % · diplôme 15 % · expérience 15 % (plafond 97 %) |
 | SMS | Simulateur : planificateur quotidien à l'heure choisie + génération à la demande (`POST /api/alerts/test`) |
@@ -51,7 +51,7 @@ npm start          # serveur sur http://localhost:3001
 
 **Compte de démonstration**
 ```
-mamadou@carriereos.com
+mamadou@jobbyblaise.com
 demo1234
 ```
 
@@ -80,7 +80,7 @@ WITH_TOKEN=1 node smoke-test.mjs /app   # simule un utilisateur connecté
 Le test charge le bundle dans **jsdom**, intercepte les erreurs React/runtime
 et échoue si une page se rend vide. Toutes les routes du projet sont couvertes.
 
-## 🗄️ Base de données (`database/carriereos.db`)
+## 🗄️ Base de données (`database/jobbyblaise.db`)
 
 ```
 users              profil candidat + CV JSON + préférences
@@ -118,7 +118,7 @@ advice             conseils carrière (markdown léger)
 │       ├── components/     # Navbar, JobCard, MatchRing, JobsBoard…
 │       ├── auth.jsx        # contexte d'authentification
 │       ├── api.js          # client HTTP
-│       └── styles.css      # design system CarrièreOS
+│       └── styles.css      # design system Job by blaise
 ├── server/
 │   ├── index.js            # serveur Express + planificateur SMS
 │   ├── routes.js           # API REST
@@ -132,4 +132,4 @@ advice             conseils carrière (markdown léger)
 
 ---
 
-© 2026 CarrièreOS — *Plateforme complète : www.carriereOS.com*
+© 2026 Job by blaise — *Plateforme complète : www.jobbyblaise.com*

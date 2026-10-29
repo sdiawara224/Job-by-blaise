@@ -87,7 +87,7 @@ export default function JobDetail({ inApp = false }) {
   useEffect(load, [id, user]);
 
   useEffect(() => {
-    if (data?.job) document.title = `${data.job.title} | CarrièreOS`;
+    if (data?.job) document.title = `${data.job.title} | Job by blaise`;
   }, [data]);
 
   if (err) return <div className="page-loader">{err}</div>;
@@ -202,8 +202,8 @@ export default function JobDetail({ inApp = false }) {
       {!inApp && (
         <footer className="footer footer-slim">
           <div className="container footer-bottom">
-            <span>© 2026 CarrièreOS — Le bon emploi. Au bon moment.</span>
-            <span>www.carriereOS.com/jobs</span>
+            <span>© 2026 Job by blaise — Le bon emploi. Au bon moment.</span>
+            <span>www.jobbyblaise.com/jobs</span>
           </div>
         </footer>
       )}

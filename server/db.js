@@ -1,4 +1,4 @@
-// CarrièreOS — base de données SQLite (node:sqlite)
+// Job by blaise — base de données SQLite (node:sqlite)
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_DIR = path.join(__dirname, '..', 'database');
-const DB_PATH = path.join(DB_DIR, 'carriereos.db');
+const DB_PATH = path.join(DB_DIR, 'jobbyblaise.db');
 
 fs.mkdirSync(DB_DIR, { recursive: true });
 

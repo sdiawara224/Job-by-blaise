@@ -1,4 +1,4 @@
-// CarrièreOS — serveur : API + fichiers statiques (SPA buildée)
+// Job by blaise — serveur : API + fichiers statiques (SPA buildée)
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -32,7 +32,7 @@ if (fs.existsSync(DIST)) {
   });
 } else {
   app.get('/', (req, res) => {
-    res.send('CarrièreOS API — lancez « npm run build » pour générer le front.');
+    res.send('Job by blaise API — lancez « npm run build » pour générer le front.');
   });
 }
 
@@ -59,12 +59,12 @@ setInterval(runDueAlerts, 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
-  console.log('  ┌─────────────────────────────────────────────┐');
-  console.log('  │  CarrièreOS — Le bon emploi. Au bon moment. │');
-  console.log('  └─────────────────────────────────────────────┘');
+  console.log('  ┌────────────────────────────────────────────────┐');
+  console.log('  │  Job by blaise — Le bon emploi. Au bon moment. │');
+  console.log('  └────────────────────────────────────────────────┘');
   console.log(`  API      : http://localhost:${PORT}/api`);
   console.log(`  Front    : ${fs.existsSync(DIST) ? `http://localhost:${PORT}/ (fichiers statiques)` : 'non buildé → npm run build'}`);
-  console.log(`  Démo     : mamadou@carriereos.com / demo1234`);
+  console.log(`  Démo     : mamadou@jobbyblaise.com / demo1234`);
   console.log('');
   runDueAlerts();
 });

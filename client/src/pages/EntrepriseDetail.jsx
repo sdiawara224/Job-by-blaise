@@ -15,7 +15,7 @@ export default function EntrepriseDetail() {
     api(`/companies/${id}`)
       .then((d) => {
         setData(d);
-        if (d?.company) document.title = `${d.company.name} — offres d'emploi | CarrièreOS`;
+        if (d?.company) document.title = `${d.company.name} — offres d'emploi | Job by blaise`;
       })
       .catch((e) => setErr(e.message));
   }, [id]);
@@ -79,8 +79,8 @@ export default function EntrepriseDetail() {
 
       <footer className="footer footer-slim">
         <div className="container footer-bottom">
-          <span>© 2026 CarrièreOS — Le bon emploi. Au bon moment.</span>
-          <span>www.carriereOS.com/jobs</span>
+          <span>© 2026 Job by blaise — Le bon emploi. Au bon moment.</span>
+          <span>www.jobbyblaise.com/jobs</span>
         </div>
       </footer>
     </div>

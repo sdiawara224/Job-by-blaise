@@ -1,4 +1,4 @@
-// CarrièreOS — API REST
+// Job by blaise — API REST
 import express from 'express';
 import {
   db, initSchema, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
@@ -213,10 +213,10 @@ function loadAlerts(uid) {
 export function buildAlertMessage(user, matchCount, topJobs) {
   const first = user.full_name.split(' ')[0];
   if (matchCount === 0) {
-    return `CarrièreOS: Bonjour ${first}, aucune nouvelle offre ne correspond à vos critères ce matin. Élargissez vos préférences sur votre profil.`;
+    return `Job by blaise: Bonjour ${first}, aucune nouvelle offre ne correspond à vos critères ce matin. Élargissez vos préférences sur votre profil.`;
   }
   const names = topJobs.slice(0, 2).map((j) => `${j.title} (${j.city})`).join(', ');
-  return `CarrièreOS: Bonjour ${first}, ${matchCount} nouvelle${matchCount > 1 ? 's' : ''} offre${matchCount > 1 ? 's' : ''} correspondent à votre profil — ${names}. Postulez → carriereOS.com/jobs`;
+  return `Job by blaise: Bonjour ${first}, ${matchCount} nouvelle${matchCount > 1 ? 's' : ''} offre${matchCount > 1 ? 's' : ''} correspondent à votre profil — ${names}. Postulez → jobbyblaise.com/jobs`;
 }
 
 export function sendAlertToUser(userRow, { force = false } = {}) {

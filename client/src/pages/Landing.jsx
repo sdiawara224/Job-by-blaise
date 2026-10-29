@@ -20,7 +20,7 @@ function MockSidebar() {
   ];
   return (
     <div className="mk-sidebar">
-      <div className="mk-brand"><span className="mk-dot" /> Carrière<span>OS</span></div>
+      <div className="mk-brand"><span className="mk-dot" /> Job by <span>blaise</span></div>
       {items.map(([ic, label, active]) => (
         <div key={label} className={`mk-navitem ${active ? 'active' : ''}`}>
           <Icon name={ic} size={13} /> {label}
@@ -90,8 +90,8 @@ function DashboardMockup() {
         <div className="mock-phone-date">Mar. 27 mai</div>
         <div className="mock-notif">
           <div className="mock-notif-head">
-            <span className="mock-notif-icon" aria-hidden="true">C</span>
-            <b>CarrièreOS</b> <span>maintenant</span>
+            <span className="mock-notif-icon" aria-hidden="true">J</span>
+            <b>Job by blaise</b> <span>maintenant</span>
           </div>
           <strong>Alerte SMS – 7h00</strong>
           <p>3 nouvelles offres correspondent à votre profil.</p>
@@ -175,7 +175,7 @@ function CvBuilderMock() {
     <div className="cvmock" aria-hidden="true">
       <div className="cvmock-bar">
         <span /><span /><span />
-        <b>CarrièreOS — Mon CV</b>
+        <b>Job by blaise — Mon CV</b>
       </div>
       <div className="cvmock-body">
         <div className="cvmock-rail">
@@ -225,7 +225,7 @@ export default function Landing() {
     api('/jobs?sort=recent').then((d) => setJobs(d.jobs.slice(0, 4))).catch(() => {});
     api('/companies').then((d) => setCompanies(d.companies.slice(0, 6))).catch(() => {});
     api('/jobs/meta').then((m) => setCities(m.cities || [])).catch(() => {});
-    document.title = 'Offres d’emploi et recrutement en Guinée et en Afrique | CarrièreOS';
+    document.title = 'Offres d’emploi et recrutement en Guinée et en Afrique | Job by blaise';
   }, []);
 
   const search = (e) => {
@@ -247,7 +247,7 @@ export default function Landing() {
             <span className="hero-pill">✓ Votre prochain emploi n'attend que vous !</span>
             <h1>
               Transformez votre carrière<br />
-              avec <span className="hero-brand">Carrière<span className="logo-os">OS</span></span>
+              avec <span className="hero-brand">Job by <span className="logo-os">blaise</span></span>
             </h1>
             <p className="hero-sub">
               Créez un CV moderne en quelques minutes et connectez-vous aux meilleures
@@ -383,7 +383,7 @@ export default function Landing() {
           <div className="section-head center">
             <div>
               <span className="kicker">3 étapes</span>
-              <h2>Rejoignez l'aventure CarrièreOS</h2>
+              <h2>Rejoignez l'aventure Job by blaise</h2>
               <p className="muted">
                 Prenez le contrôle de votre avenir professionnel avec un profil qui vous met
                 réellement en avant.
@@ -401,7 +401,7 @@ export default function Landing() {
                   </div>
                 </div>
               ))}
-              <Link to="/inscription" className="btn btn-primary btn-xl">Rejoindre CarrièreOS</Link>
+              <Link to="/inscription" className="btn btn-primary btn-xl">Rejoindre Job by blaise</Link>
             </div>
             <div className="join-visual"><CvBuilderMock /></div>
           </div>
@@ -418,7 +418,7 @@ export default function Landing() {
             <Link to="/jobs" className="btn btn-ghost-light btn-xl">Trouver un job →</Link>
           </div>
           <div className="hero-url light">
-            <b>www.carriereOS.com/jobs</b>
+            <b>www.jobbyblaise.com/jobs</b>
             <span>Le bon emploi. Au bon moment.</span>
           </div>
         </div>
@@ -447,14 +447,14 @@ export default function Landing() {
             </div>
             <div>
               <b>Contact</b>
-              <span>www.carriereOS.com</span>
+              <span>www.jobbyblaise.com</span>
               <span>Conakry, Guinée</span>
-              <span>contact@carriereos.com</span>
+              <span>contact@jobbyblaise.com</span>
             </div>
           </div>
         </div>
         <div className="container footer-bottom">
-          <span>© 2026 CarrièreOS — Tous droits réservés.</span>
+          <span>© 2026 Job by blaise — Tous droits réservés.</span>
           <span>Fait avec ❤ en Guinée 🇬🇳</span>
         </div>
       </footer>
