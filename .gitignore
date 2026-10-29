@@ -5,3 +5,4 @@ database/
 .DS_Store
 .env
 *.zip
+image-search/
