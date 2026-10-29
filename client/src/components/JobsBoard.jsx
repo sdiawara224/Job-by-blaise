@@ -47,7 +47,7 @@ export default function JobsBoard() {
 
   return (
     <div className="jobsboard">
-      <div className="jobsboard-filters">
+      <div className="jobsboard-filters reveal">
         <div className="filter-search">
           <Icon name="search" size={17} />
           <input
@@ -93,7 +93,7 @@ export default function JobsBoard() {
       {loading ? (
         <div className="empty">Chargement des offres…</div>
       ) : jobs.length ? (
-        <div className="jobs-grid">
+        <div className="jobs-grid reveal stagger">
           {jobs.map((j) => <JobCard key={j.id} job={j} />)}
         </div>
       ) : (

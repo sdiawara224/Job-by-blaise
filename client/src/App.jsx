@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import Landing from './pages/Landing.jsx';
 import Jobs from './pages/Jobs.jsx';
@@ -18,19 +19,64 @@ import AppJobs from './pages/AppJobs.jsx';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="page-loader">Chargement…</div>;
+  if (loading) return <div className="page-loader"><span className="dots" /></div>;
   if (!user) return <Navigate to="/connexion" replace />;
   return children;
 }
 
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="page-loader">Chargement…</div>;
+  if (loading) return <div className="page-loader"><span className="dots" /></div>;
   if (user) return <Navigate to="/app" replace />;
   return children;
 }
 
+/** Révèle au scroll les éléments `.reveal` (IntersectionObserver + MutationObserver). */
+function useScrollReveal(pathname) {
+  useEffect(() => {
+    const collect = (root) => {
+      const out = [];
+      if (root.nodeType === 1 && root.matches?.('.reveal')) out.push(root);
+      root.querySelectorAll?.('.reveal').forEach((el) => out.push(el));
+      return out;
+    };
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      for (const en of entries) {
+        if (en.isIntersecting) {
+          en.target.classList.add('is-visible');
+          io.unobserve(en.target);
+        }
+      }
+    }, { threshold: 0.08, rootMargin: '0px 0px -36px 0px' });
+
+    collect(document.body).forEach((el) => io.observe(el));
+
+    // grilles rendues après fetch : on observe les nouveaux nœuds `.reveal`
+    const mo = new MutationObserver((muts) => {
+      for (const m of muts) {
+        for (const node of m.addedNodes) collect(node).forEach((el) => io.observe(el));
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    return () => { io.disconnect(); mo.disconnect(); };
+  }, [pathname]);
+}
+
 export default function App() {
+  const location = useLocation();
+
+  useScrollReveal(location.pathname);
+
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' });
+  }, [location.pathname]);
+
   return (
     <Routes>
       {/* ---- Public ---- */}

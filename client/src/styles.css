@@ -989,7 +989,200 @@ h3 { font-size: 1.1rem; font-weight: 700; }
 
 .in-app-main { padding-left: 0; padding-right: 0; }
 
-/* ---------------- Responsive ---------------- */
+/* ============================================================
+   Animations & micro-interactions
+   ============================================================ */
+
+/* --- Entrées au scroll --- */
+.reveal { opacity: 0; }
+.reveal.is-visible {
+  animation: fade-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.reveal.is-visible.d1 { animation-delay: 0.1s; }
+.reveal.is-visible.d2 { animation-delay: 0.2s; }
+.reveal.is-visible.d3 { animation-delay: 0.32s; }
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger : enfants animés en cascade quand le conteneur entre en vue */
+.reveal.stagger > * { opacity: 0; }
+.reveal.stagger.is-visible > * {
+  animation: fade-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.reveal.stagger.is-visible > *:nth-child(1) { animation-delay: 0.05s; }
+.reveal.stagger.is-visible > *:nth-child(2) { animation-delay: 0.13s; }
+.reveal.stagger.is-visible > *:nth-child(3) { animation-delay: 0.21s; }
+.reveal.stagger.is-visible > *:nth-child(4) { animation-delay: 0.29s; }
+.reveal.stagger.is-visible > *:nth-child(5) { animation-delay: 0.37s; }
+.reveal.stagger.is-visible > *:nth-child(6) { animation-delay: 0.45s; }
+.reveal.stagger.is-visible > *:nth-child(7) { animation-delay: 0.53s; }
+.reveal.stagger.is-visible > *:nth-child(8) { animation-delay: 0.61s; }
+
+/* --- Anneau de match : tracé du cercle --- */
+.match-ring-progress {
+  animation: ring-draw 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ring-draw {
+  from { stroke-dashoffset: var(--ring-c, 400); }
+  to { stroke-dashoffset: var(--ring-off, 0); }
+}
+
+/* --- Navbar : ombre au scroll --- */
+.navbar { transition: box-shadow 0.25s ease, background 0.25s ease; }
+.navbar.scrolled {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 28px rgba(10, 27, 77, 0.09);
+}
+.navbar-links a, .navbar-actions .btn, .sidebar-link {
+  transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+/* --- Boutons : pression + reflet --- */
+.btn { position: relative; overflow: hidden; }
+.btn:active { transform: translateY(0) scale(0.97); }
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+  transform: translateX(-130%); pointer-events: none;
+}
+.btn-primary:hover::after { animation: shine 0.7s ease; }
+@keyframes shine {
+  from { transform: translateX(-130%); }
+  to { transform: translateX(130%); }
+}
+
+/* --- Cartes : élévation plus vivante --- */
+.job-card, .mini-job, .company-card, .advice-card {
+  will-change: transform;
+}
+.job-card:hover .job-card-title,
+.mini-job:hover .mini-job-title { color: var(--blue); }
+.company-card:hover .company-card-logo { transform: translateY(-3px) rotate(-3deg); transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.company-card-logo { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.company-card:hover .company-cover-blob { transform: scale(1.15); transition: transform 0.4s ease; }
+
+/* --- Chips & picks : micro-interaction --- */
+.pick { transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
+.pick:active { transform: scale(0.94); }
+.pick.on { animation: pop 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes pop {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* --- Badges : attention douce --- */
+.dot-badge { animation: pulse 1.8s ease-in-out infinite; }
+.sidebar-badge { animation: badge-in 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.55); }
+  55% { box-shadow: 0 0 0 7px rgba(229, 72, 77, 0); }
+}
+@keyframes badge-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Hero : visuel flottant + notif entrante --- */
+.mock-window { animation: float-soft 7s ease-in-out infinite; }
+.mock-phone { animation: float-soft 5.6s ease-in-out infinite reverse; }
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-9px) rotate(-1deg); }
+}
+.mock-notif { animation: notif-in 0.8s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes notif-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.hero-pill { animation: pill-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes pill-in {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Accueil / dashboard : compteurs de stats --- */
+.dash-stat b, .mini-stats b { font-variant-numeric: tabular-nums; }
+
+/* --- Loader : trois points rebondissants --- */
+.page-loader { flex-direction: column; gap: 16px; }
+.dots {
+  position: relative; display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--blue);
+  animation: bounce-dot 1s ease-in-out 0.18s infinite;
+}
+.dots::before, .dots::after {
+  content: ''; position: absolute; top: 0;
+  width: 10px; height: 10px; border-radius: 50%; background: var(--blue);
+  animation: bounce-dot 1s ease-in-out infinite;
+}
+.dots::before { left: -17px; }
+.dots::after { left: 17px; animation-delay: 0.36s; }
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.45; }
+  40% { transform: translateY(-9px); opacity: 1; }
+}
+
+/* --- Fiches détaillées : entrée de la carte --- */
+.detail-main, .article, .auth-card { animation: card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Téléphone (alertes) : SMS qui glisse dans le fil --- */
+.thread-bubble { animation: sms-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes sms-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sms-mini-icon .icon { animation: bell-ring 2.6s ease-in-out infinite; transform-origin: top center; }
+@keyframes bell-ring {
+  0%, 78%, 100% { transform: rotate(0); }
+  82% { transform: rotate(12deg); }
+  86% { transform: rotate(-10deg); }
+  90% { transform: rotate(7deg); }
+  94% { transform: rotate(-5deg); }
+}
+
+/* --- Onglets : glissement doux de l'indicateur --- */
+.tab { transition: color 0.18s ease, background 0.18s ease, transform 0.15s ease; }
+.tab:active { transform: scale(0.96); }
+.cat-tab { transition: all 0.15s ease; }
+.cat-tab:hover { border-color: var(--blue); color: var(--blue); transform: translateY(-1px); }
+.cat-tab.active:hover { color: #fff; }
+
+/* --- Formulaires : focus animé --- */
+.form input, .form-card input, .form select, .form-card select,
+.form textarea, .form-card textarea, .skill-add input {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* --- Sidebar : indicateur actif --- */
+.sidebar-link.active { animation: side-pop 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes side-pop {
+  from { transform: scale(0.96); opacity: 0.6; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Scrollbar fine --- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cfd8ee; border-radius: 999px; border: 2px solid #fff; }
+::-webkit-scrollbar-thumb:hover { background: #a9baf0; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* --- Accessibilité : mouvement réduit --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal, .reveal.stagger > * { opacity: 1 !important; }
+}
 @media (max-width: 1080px) {
   .hero-inner, .split, .join-grid { grid-template-columns: 1fr; }
   .hero-visual { max-width: 640px; margin: 26px auto 0; width: 100%; }

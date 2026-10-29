@@ -23,7 +23,7 @@ export default function Entreprises() {
       </section>
 
       <main className="container section-tight">
-        <div className="company-grid">
+        <div className="company-grid reveal stagger">
           {companies.map((c) => <CompanyCard key={c.id} company={c} />)}
           {!companies.length && <div className="empty">Chargement des entreprises…</div>}
         </div>

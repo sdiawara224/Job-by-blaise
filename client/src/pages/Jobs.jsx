@@ -17,7 +17,7 @@ export default function Jobs() {
     <div className="page">
       <Navbar />
       <section className="page-hero">
-        <div className="container">
+        <div className="container reveal">
           <span className="kicker">Emplois · Guinée & Afrique de l’Ouest</span>
           <h1>{search ? `« ${search} »` : 'Trouve les offres qui te correspondent'}</h1>
           <p>{user ? 'Les taux de match sont calculés pour ton profil.' : 'Des centaines d’offres, un matching intelligent, des alertes SMS chaque matin.'}</p>

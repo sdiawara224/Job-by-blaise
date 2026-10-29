@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   return (
     <div className="dash">
-      <section className="dash-hero card">
+      <section className="dash-hero card reveal">
         <div className="dash-hero-copy">
           <h1>Bonjour {first} 👋</h1>
           <p>De nouvelles opportunités t’attendent en Guinée.</p>
@@ -64,7 +64,7 @@ export default function Dashboard() {
               <h2><Icon name="star" size={18} /> Offres d’emploi pour toi</h2>
               <Link to="/app/offres" className="link-btn">Toutes les offres →</Link>
             </div>
-            <div className="jobs-grid">
+            <div className="jobs-grid reveal stagger">
               {rec.map((j) => <JobCard key={j.id} job={j} to={`/app/offres/${j.id}`} />)}
               {!rec.length && <div className="empty">Aucune recommandation pour l’instant — complète ton profil.</div>}
             </div>
@@ -96,7 +96,7 @@ export default function Dashboard() {
               <h2><Icon name="advice" size={18} /> Conseils du moment</h2>
               <Link to="/app/conseils" className="link-btn">Tous les conseils →</Link>
             </div>
-            <div className="mini-advice-row">
+            <div className="mini-advice-row reveal stagger">
               <Link to="/app/conseils/1" className="mini-advice">📝 Rédiger un CV qui décroche un entretien</Link>
               <Link to="/app/conseils/3" className="mini-advice">⏰ Recevoir les alertes SMS 7h00</Link>
               <Link to="/app/conseils/5" className="mini-advice">🎯 Stratégie 30 jours pour trouver un emploi</Link>

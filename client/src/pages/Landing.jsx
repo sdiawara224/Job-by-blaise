@@ -240,7 +240,7 @@ export default function Landing() {
       {/* ============ 1. HERO ============ */}
       <section className="hero">
         <div className="container hero-inner">
-          <div className="hero-copy">
+          <div className="hero-copy reveal">
             <span className="hero-pill">✓ Votre prochain emploi n'attend que vous !</span>
             <h1>
               Transformez votre carrière<br />
@@ -261,7 +261,7 @@ export default function Landing() {
               <span><b>4,8/5</b> ★ candidats</span>
             </div>
           </div>
-          <div className="hero-visual">
+          <div className="hero-visual reveal d2">
             <DashboardMockup />
             <span className="hero-scribble">Le bon emploi.<br />Au bon moment.</span>
           </div>
@@ -271,14 +271,14 @@ export default function Landing() {
       {/* ============ 2. DERNIÈRES OFFRES ============ */}
       <section className="section">
         <div className="container">
-          <div className="section-head center">
+          <div className="section-head center reveal">
             <div>
               <span className="kicker">Offres d'emploi</span>
               <h2>Les dernières offres d'emploi</h2>
               <p className="muted">Découvrez les offres d'emploi qui correspondent à vos compétences et aspirations.</p>
             </div>
           </div>
-          <div className="mini-jobs-grid">
+          <div className="mini-jobs-grid reveal stagger">
             {jobs.map((j) => (
               <Link to={`/jobs/${j.id}`} className="mini-job" key={j.id}>
                 <div className="mini-job-head">
@@ -309,14 +309,14 @@ export default function Landing() {
       {/* ============ 3. ENTREPRISES ============ */}
       <section className="section section-soft">
         <div className="container">
-          <div className="section-head center">
+          <div className="section-head center reveal">
             <div>
               <span className="kicker">Talents & entreprises</span>
               <h2>Les entreprises qui recrutent</h2>
               <p className="muted">Explorez les entreprises qui recrutent et découvrez les opportunités qu'elles offrent.</p>
             </div>
           </div>
-          <div className="company-grid">
+          <div className="company-grid reveal stagger">
             {companies.map((c) => <CompanyCard key={c.id} company={c} />)}
             {!companies.length && <div className="empty">Chargement des entreprises…</div>}
           </div>
@@ -329,8 +329,8 @@ export default function Landing() {
       {/* ============ 4. CV EN 3 CLICS ============ */}
       <section className="section">
         <div className="container split">
-          <div className="split-visual"><CvIllustration /></div>
-          <div className="split-copy">
+          <div className="split-visual reveal"><CvIllustration /></div>
+          <div className="split-copy reveal d1">
             <span className="kicker">CV</span>
             <h2>Votre CV moderne en 3 clics</h2>
             <p>
@@ -347,7 +347,7 @@ export default function Landing() {
       {/* ============ 5. RECHERCHE ============ */}
       <section className="section section-soft">
         <div className="container split split-reverse">
-          <div className="split-copy">
+          <div className="split-copy reveal d1">
             <span className="kicker">Matching</span>
             <h2>Trouvez l'emploi fait pour vous</h2>
             <p>
@@ -370,14 +370,14 @@ export default function Landing() {
               <button className="btn btn-primary" type="submit">Explorer les offres</button>
             </form>
           </div>
-          <div className="split-visual"><SearchIllustration /></div>
+          <div className="split-visual reveal"><SearchIllustration /></div>
         </div>
       </section>
 
       {/* ============ 6. REJOIGNEZ L'AVENTURE ============ */}
       <section className="section">
         <div className="container">
-          <div className="section-head center">
+          <div className="section-head center reveal">
             <div>
               <span className="kicker">3 étapes</span>
               <h2>Rejoignez l'aventure Job by blaise</h2>
@@ -388,7 +388,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="join-grid">
-            <div className="join-steps">
+            <div className="join-steps reveal stagger">
               {STEPS.map((s) => (
                 <div className="join-step" key={s.n}>
                   <span className="join-step-num">{s.n}</span>
@@ -400,14 +400,14 @@ export default function Landing() {
               ))}
               <Link to="/inscription" className="btn btn-primary btn-xl">Rejoindre Job by blaise</Link>
             </div>
-            <div className="join-visual"><CvBuilderMock /></div>
+            <div className="join-visual reveal d2"><CvBuilderMock /></div>
           </div>
         </div>
       </section>
 
       {/* ============ CTA FINAL ============ */}
       <section className="section final-cta">
-        <div className="container final-cta-inner">
+        <div className="container final-cta-inner reveal">
           <h2>Votre prochain emploi n'attend que vous</h2>
           <p>Rejoignez les candidats qui reçoivent chaque matin les offres faites pour eux.</p>
           <div className="final-cta-actions">

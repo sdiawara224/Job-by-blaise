@@ -38,7 +38,7 @@ export default function Advice({ inApp = false }) {
             </button>
           ))}
         </div>
-        <div className="advice-grid">
+        <div className="advice-grid reveal stagger">
           {filtered.map((a) => (
             <Link to={`${base}/${a.id}`} className="advice-card" key={a.id}>
               <span className="advice-cat" style={{ background: `${a.color}1a`, color: a.color }}>{a.category}</span>
