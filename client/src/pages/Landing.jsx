@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar.jsx';
 import CompanyCard from '../components/CompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
+import heroWoman from '../assets/hero-woman.png';
 import { api } from '../api.js';
 
 /* ---------- Illustrations SVG ---------- */
@@ -145,26 +146,63 @@ export default function Landing() {
 
       {/* ============ 1. HERO ============ */}
       <section className="hero">
-        <div className="container hero-inner solo">
-          <div className="hero-copy solo reveal">
-            <span className="hero-pill">✓ Votre prochain emploi n'attend que vous !</span>
+        <div className="container hero-inner">
+          <div className="hero-copy reveal">
             <h1>
-              Transformez votre carrière<br />
-              avec <span className="hero-brand">Job by <span className="logo-os">blaise</span></span>
+              Transformez votre<br />
+              carrière avec{' '}
+              <span className="hero-zig">
+                Job by <span className="logo-os">blaise</span>
+                <svg className="hero-zig-line" viewBox="0 0 140 14" preserveAspectRatio="none" aria-hidden="true">
+                  <path
+                    d="M3 9 L13 4 L23 9 L33 4 L43 9 L53 4 L63 9 L73 4 L83 9 L93 4 L103 9 L113 4 L123 9 L133 4"
+                    fill="none" stroke="#F5A524" strokeWidth="3"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </h1>
             <p className="hero-sub">
-              Créez un CV moderne en quelques minutes et connectez-vous aux meilleures
-              opportunités d'emploi en Guinée et en Afrique de l'Ouest — avec des
-              <b className="blue"> alertes SMS chaque matin à 7h00</b>.
+              Créez un CV moderne en quelques minutes et connectez-vous aux
+              meilleures opportunités d'emploi en Guinée et en Afrique de l'Ouest.
+              <b className="hero-sub-strong">Votre prochain emploi n'attend que vous !</b>
             </p>
             <div className="hero-cta">
               <Link to="/jobs" className="btn btn-primary btn-xl">Trouver un job</Link>
               <Link to="/inscription" className="btn btn-outline btn-xl">Créer mon CV</Link>
             </div>
-            <div className="hero-trust">
-              <span><b>299+</b> offres actives</span>
-              <span><b>18</b> entreprises</span>
-              <span><b>4,8/5</b> ★ candidats</span>
+          </div>
+
+          <div className="hero-visual reveal d2">
+            <div className="hero-stage">
+              <span className="hero-blob hero-blob-blue" aria-hidden="true" />
+              <span className="hero-blob hero-blob-navy" aria-hidden="true" />
+              <span className="hero-blob hero-blob-stripes" aria-hidden="true">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <g stroke="#D6DCEB" strokeWidth="5" strokeLinecap="round">
+                    <line x1="18" y1="86" x2="52" y2="52" />
+                    <line x1="38" y1="94" x2="76" y2="56" />
+                    <line x1="60" y1="96" x2="96" y2="60" />
+                    <line x1="84" y1="92" x2="108" y2="68" />
+                  </g>
+                </svg>
+              </span>
+              <img
+                className="hero-photo" src={heroWoman}
+                alt="Candidate souriante en chemise jaune, bras croisés — Job by blaise"
+              />
+              <div className="hero-float hero-float-accept">
+                <span className="float-check"><Icon name="check" size={17} /></span>
+                <b>Candidature<br />Acceptée</b>
+              </div>
+              <div className="hero-float hero-float-flow">
+                <span className="flow-avatar"><Icon name="profile" size={19} /></span>
+                <span className="flow-arrows" aria-hidden="true">❯❯❯</span>
+                <span className="flow-cv">
+                  <Icon name="advice" size={18} />
+                  <i className="flow-dot" aria-hidden="true">✓</i>
+                </span>
+              </div>
             </div>
           </div>
         </div>
