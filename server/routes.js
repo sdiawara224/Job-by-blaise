@@ -1,33 +1,41 @@
 // Job by blaise — API REST
+// Handlers ASYNCHRONES (couche données async) : wrap() capte les rejets sous Express 4.
 import express from 'express';
 import {
-  db, initSchema, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
+  db, initSchema, backendName, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
   CONTRACT_TYPES, EDUCATION_ORDER,
 } from './db.js';
 import { hashPassword, verifyPassword, createToken, getUserFromRequest } from './auth.js';
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
 
-initSchema();
-seed(); // auto-seed si la base est vide
+await initSchema();
+await seed(); // auto-seed si la base est vide
 
 const router = express.Router();
 
+// Express 4 : on rejoue les promesses rejetées vers le gestionnaire d'erreurs.
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
 // ---------- utilitaires ----------
-function loadUser(id) {
+async function loadUser(id) {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 }
 
-function requireAuth(req, res, next) {
-  const uid = getUserFromRequest(req);
-  if (!uid) return res.status(401).json({ error: 'Authentification requise.' });
-  const user = loadUser(uid);
-  if (!user) return res.status(401).json({ error: 'Session expirée.' });
-  req.user = user;
-  next();
+async function requireAuth(req, res, next) {
+  try {
+    const uid = getUserFromRequest(req);
+    if (!uid) return res.status(401).json({ error: 'Authentification requise.' });
+    const user = await loadUser(uid);
+    if (!user) return res.status(401).json({ error: 'Session expirée.' });
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
-function searchJobs({ search, city, contract, domain, sort } = {}) {
+async function searchJobs({ search, city, contract, domain, sort } = {}) {
   const clauses = ['j.is_active = 1'];
   const params = [];
   if (search) {
@@ -41,7 +49,8 @@ function searchJobs({ search, city, contract, domain, sort } = {}) {
   let sql = `${JOB_SELECT} WHERE ${clauses.join(' AND ')}`;
   if (sort === 'salary') sql += ' ORDER BY j.salary_max DESC';
   else sql += ' ORDER BY j.posted_at DESC';
-  return db.prepare(sql).all(...params).map(jobRow);
+  const rows = await db.prepare(sql).all(...params);
+  return rows.map(jobRow);
 }
 
 function withMatch(profile, jobs) {
@@ -49,51 +58,60 @@ function withMatch(profile, jobs) {
   return jobs.map((j) => ({ ...j, match: computeMatch(profile, j) }));
 }
 
+// ================= SANTÉ =================
+router.get('/health', (req, res) => {
+  res.json({ ok: true, backend: backendName(), app: 'job-by-blaise' });
+});
+
 // ================= AUTH =================
-router.post('/auth/register', (req, res) => {
+router.post('/auth/register', wrap(async (req, res) => {
   const { email, password, fullName, phone, city } = req.body || {};
   if (!email || !password || !fullName) {
     return res.status(400).json({ error: 'E-mail, mot de passe et nom complet sont requis.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'E-mail invalide.' });
   if (String(password).length < 6) return res.status(400).json({ error: 'Mot de passe : 6 caractères minimum.' });
-  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(String(email).toLowerCase());
+  const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(String(email).toLowerCase());
   if (exists) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
 
-  const info = db.prepare(`
+  const info = await db.prepare(`
     INSERT INTO users (email, password_hash, full_name, phone, city, title)
     VALUES (?, ?, ?, ?, ?, '')
   `).run(String(email).toLowerCase(), hashPassword(password), fullName.trim(), phone || '', city || 'Conakry');
 
   const uid = Number(info.lastInsertRowid);
-  db.prepare(`
-    INSERT OR REPLACE INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
-    VALUES (?, 1, ?, '07:00', '[]', ?, '[]', datetime('now'))
+  await db.prepare(`
+    INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
+    VALUES (?, 1, ?, '07:00', '[]', ?, '[]', CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id) DO UPDATE SET
+      enabled = excluded.enabled, phone = excluded.phone, send_time = excluded.send_time,
+      keywords = excluded.keywords, cities = excluded.cities, contracts = excluded.contracts,
+      updated_at = excluded.updated_at
   `).run(uid, phone || '', JSON.stringify([city || 'Conakry']));
 
-  res.status(201).json({ token: createToken(uid), user: publicUser(loadUser(uid)) });
-});
+  res.status(201).json({ token: createToken(uid), user: publicUser(await loadUser(uid)) });
+}));
 
-router.post('/auth/login', (req, res) => {
+router.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body || {};
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').toLowerCase());
+  const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').toLowerCase());
   if (!user || !verifyPassword(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
   }
   res.json({ token: createToken(user.id), user: publicUser(user) });
-});
+}));
 
-router.get('/auth/me', requireAuth, (req, res) => {
+router.get('/auth/me', requireAuth, wrap(async (req, res) => {
   res.json({ user: publicUser(req.user) });
-});
+}));
 
 // ================= PROFIL =================
-router.get('/profile', requireAuth, (req, res) => {
+router.get('/profile', requireAuth, wrap(async (req, res) => {
   const profile = publicUser(req.user);
   res.json({ profile, completion: profileCompletion(profile) });
-});
+}));
 
-router.put('/profile', requireAuth, (req, res) => {
+router.put('/profile', requireAuth, wrap(async (req, res) => {
   const b = req.body || {};
   const u = req.user;
   const fields = {
@@ -109,20 +127,20 @@ router.put('/profile', requireAuth, (req, res) => {
     preferred_cities: JSON.stringify(Array.isArray(b.preferredCities) ? b.preferredCities : jget(u.preferred_cities, [])),
     cv: JSON.stringify(b.cv && typeof b.cv === 'object' ? b.cv : jget(u.cv, {})),
   };
-  db.prepare(`
+  await db.prepare(`
     UPDATE users SET full_name=@full_name, phone=@phone, city=@city, title=@title, bio=@bio,
       education=@education, experience_years=@experience_years, skills=@skills,
       job_types=@job_types, preferred_cities=@preferred_cities, cv=@cv
     WHERE id=${u.id}
   `).run(fields);
-  const profile = publicUser(loadUser(u.id));
+  const profile = publicUser(await loadUser(u.id));
   res.json({ profile, completion: profileCompletion(profile) });
-});
+}));
 
 // ================= OFFRES =================
-router.get('/jobs/meta', (req, res) => {
-  const domains = db.prepare('SELECT DISTINCT domain FROM jobs WHERE is_active=1 ORDER BY domain').all().map((r) => r.domain);
-  const cities = db.prepare('SELECT DISTINCT city FROM jobs WHERE is_active=1 ORDER BY city').all().map((r) => r.city);
+router.get('/jobs/meta', wrap(async (req, res) => {
+  const domains = (await db.prepare('SELECT DISTINCT domain FROM jobs WHERE is_active=1 ORDER BY domain').all()).map((r) => r.domain);
+  const cities = (await db.prepare('SELECT DISTINCT city FROM jobs WHERE is_active=1 ORDER BY city').all()).map((r) => r.city);
   res.json({
     cities, domains,
     contracts: CONTRACT_TYPES,
@@ -130,39 +148,39 @@ router.get('/jobs/meta', (req, res) => {
     allCities: CITIES,
     education: EDUCATION_ORDER,
   });
-});
+}));
 
-router.get('/jobs', (req, res) => {
+router.get('/jobs', wrap(async (req, res) => {
   const uid = getUserFromRequest(req);
-  const profile = uid ? publicUser(loadUser(uid)) : null;
-  const jobs = searchJobs(req.query);
+  const profile = uid ? publicUser(await loadUser(uid)) : null;
+  const jobs = await searchJobs(req.query);
   res.json({ jobs: withMatch(profile, jobs), total: jobs.length });
-});
+}));
 
-router.get('/jobs/recommended', requireAuth, (req, res) => {
+router.get('/jobs/recommended', requireAuth, wrap(async (req, res) => {
   const profile = publicUser(req.user);
-  const scored = withMatch(profile, searchJobs({}))
+  const scored = withMatch(profile, await searchJobs({}))
     .filter((j) => j.match)
     .sort((a, b) => b.match.score - a.match.score);
   const limit = Math.max(1, Math.min(12, Number(req.query.limit) || 4));
   res.json({ jobs: scored.slice(0, limit) });
-});
+}));
 
-router.get('/jobs/:id(\\d+)', (req, res) => {
-  const row = db.prepare(`${JOB_SELECT} WHERE j.id = ?`).get(Number(req.params.id));
+router.get('/jobs/:id(\\d+)', wrap(async (req, res) => {
+  const row = await db.prepare(`${JOB_SELECT} WHERE j.id = ?`).get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'Offre introuvable.' });
   const job = jobRow(row);
   const uid = getUserFromRequest(req);
-  const profile = uid ? publicUser(loadUser(uid)) : null;
+  const profile = uid ? publicUser(await loadUser(uid)) : null;
   const applied = uid
-    ? !!db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(uid, job.id)
+    ? !!(await db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(uid, job.id))
     : false;
   res.json({ job: { ...job, match: profile ? computeMatch(profile, job) : null }, applied });
-});
+}));
 
 // ================= CANDIDATURES =================
-router.get('/applications', requireAuth, (req, res) => {
-  const rows = db.prepare(`
+router.get('/applications', requireAuth, wrap(async (req, res) => {
+  const rows = await db.prepare(`
     SELECT a.*, j.title, j.city, j.contract, c.name AS company_name, c.color AS company_color
     FROM applications a
     JOIN jobs j ON j.id = a.job_id
@@ -183,37 +201,37 @@ router.get('/applications', requireAuth, (req, res) => {
       accepted: applications.filter((a) => a.status === 'Acceptée').length,
     },
   });
-});
+}));
 
-router.post('/applications', requireAuth, (req, res) => {
+router.post('/applications', requireAuth, wrap(async (req, res) => {
   const { jobId, coverLetter } = req.body || {};
-  const job = db.prepare('SELECT id FROM jobs WHERE id = ? AND is_active = 1').get(Number(jobId));
+  const job = await db.prepare('SELECT id FROM jobs WHERE id = ? AND is_active = 1').get(Number(jobId));
   if (!job) return res.status(404).json({ error: 'Offre introuvable.' });
-  const exists = db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(req.user.id, job.id);
+  const exists = await db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(req.user.id, job.id);
   if (exists) return res.status(409).json({ error: 'Vous avez déjà postulé à cette offre.' });
-  const info = db.prepare(`
+  const info = await db.prepare(`
     INSERT INTO applications (user_id, job_id, cover_letter, status) VALUES (?, ?, ?, 'En attente')
   `).run(req.user.id, job.id, String(coverLetter || '').slice(0, 4000));
   res.status(201).json({ id: Number(info.lastInsertRowid), status: 'En attente' });
-});
+}));
 
-router.delete('/applications/:id', requireAuth, (req, res) => {
-  const info = db.prepare('DELETE FROM applications WHERE id = ? AND user_id = ?')
+router.delete('/applications/:id', requireAuth, wrap(async (req, res) => {
+  const info = await db.prepare('DELETE FROM applications WHERE id = ? AND user_id = ?')
     .run(Number(req.params.id), req.user.id);
   if (!info.changes) return res.status(404).json({ error: 'Candidature introuvable.' });
   res.json({ ok: true });
-});
+}));
 
 // ================= ALERTES SMS =================
-function loadAlerts(uid) {
-  let a = db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
+async function loadAlerts(uid) {
+  let a = await db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
   if (!a) {
-    const u = loadUser(uid);
-    db.prepare(`
+    const u = await loadUser(uid);
+    await db.prepare(`
       INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts)
       VALUES (?, 1, ?, '07:00', '[]', ?, '[]')
     `).run(uid, u.phone || '', JSON.stringify([u.city || 'Conakry']));
-    a = db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
+    a = await db.prepare('SELECT * FROM alert_settings WHERE user_id = ?').get(uid);
   }
   return a;
 }
@@ -227,9 +245,9 @@ export function buildAlertMessage(user, matchCount, topJobs) {
   return `Job by blaise: Bonjour ${first}, ${matchCount} nouvelle${matchCount > 1 ? 's' : ''} offre${matchCount > 1 ? 's' : ''} correspondent à votre profil — ${names}. Postulez → jobbyblaise.com/jobs`;
 }
 
-export function sendAlertToUser(userRow, { force = false } = {}) {
+export async function sendAlertToUser(userRow, { force = false } = {}) {
   const profile = publicUser(userRow);
-  const alerts = loadAlerts(userRow.id);
+  const alerts = await loadAlerts(userRow.id);
   if (!alerts.enabled && !force) return null;
   const today = new Date().toISOString().slice(0, 10);
   if (alerts.last_sent_on === today && !force) return null;
@@ -238,7 +256,7 @@ export function sendAlertToUser(userRow, { force = false } = {}) {
   const cities = jget(alerts.cities, []);
   const contracts = jget(alerts.contracts, []);
 
-  let jobs = searchJobs({}).filter((j) => {
+  let jobs = (await searchJobs({})).filter((j) => {
     if (cities.length && !cities.includes(j.city)) return false;
     if (contracts.length && !contracts.includes(j.contract)) return false;
     if (keywords.length) {
@@ -251,16 +269,16 @@ export function sendAlertToUser(userRow, { force = false } = {}) {
   jobs.sort((a, b) => b.match.score - a.match.score);
 
   const body = buildAlertMessage(userRow, jobs.length, jobs);
-  db.prepare('INSERT INTO sms_messages (user_id, body) VALUES (?, ?)').run(userRow.id, body);
-  db.prepare('UPDATE alert_settings SET last_sent_on = ? WHERE user_id = ?').run(today, userRow.id);
+  await db.prepare('INSERT INTO sms_messages (user_id, body) VALUES (?, ?)').run(userRow.id, body);
+  await db.prepare('UPDATE alert_settings SET last_sent_on = ? WHERE user_id = ?').run(today, userRow.id);
   return { body, count: jobs.length };
 }
 
-router.get('/alerts', requireAuth, (req, res) => {
-  const a = loadAlerts(req.user.id);
-  const messages = db.prepare('SELECT id, body, sent_at, is_read FROM sms_messages WHERE user_id = ? ORDER BY sent_at DESC LIMIT 50')
-    .all(req.user.id)
-    .map((m) => ({ id: m.id, body: m.body, sentAt: m.sent_at, isRead: !!m.is_read }));
+router.get('/alerts', requireAuth, wrap(async (req, res) => {
+  const a = await loadAlerts(req.user.id);
+  const rows = await db.prepare('SELECT id, body, sent_at, is_read FROM sms_messages WHERE user_id = ? ORDER BY sent_at DESC LIMIT 50')
+    .all(req.user.id);
+  const messages = rows.map((m) => ({ id: m.id, body: m.body, sentAt: m.sent_at, isRead: !!m.is_read }));
   res.json({
     settings: {
       enabled: !!a.enabled,
@@ -274,40 +292,41 @@ router.get('/alerts', requireAuth, (req, res) => {
     messages,
     unread: messages.filter((m) => !m.isRead).length,
   });
-});
+}));
 
-router.put('/alerts', requireAuth, (req, res) => {
+router.put('/alerts', requireAuth, wrap(async (req, res) => {
   const b = req.body || {};
   const u = req.user;
-  db.prepare(`
+  const current = await loadAlerts(u.id);
+  await db.prepare(`
     INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(user_id) DO UPDATE SET
       enabled=excluded.enabled, phone=excluded.phone, send_time=excluded.send_time,
       keywords=excluded.keywords, cities=excluded.cities, contracts=excluded.contracts,
-      updated_at=datetime('now')
+      updated_at=excluded.updated_at
   `).run(
     u.id,
     b.enabled === false ? 0 : 1,
-    String(b.phone ?? loadAlerts(u.id).phone ?? ''),
+    String(b.phone ?? current.phone ?? ''),
     /^\d{2}:\d{2}$/.test(b.sendTime || '') ? b.sendTime : '07:00',
     JSON.stringify(Array.isArray(b.keywords) ? b.keywords : []),
     JSON.stringify(Array.isArray(b.cities) ? b.cities : []),
     JSON.stringify(Array.isArray(b.contracts) ? b.contracts : [])
   );
   res.json({ ok: true });
-});
+}));
 
-router.post('/alerts/test', requireAuth, (req, res) => {
-  const result = sendAlertToUser(req.user, { force: true });
+router.post('/alerts/test', requireAuth, wrap(async (req, res) => {
+  const result = await sendAlertToUser(req.user, { force: true });
   if (!result) return res.status(400).json({ error: 'Impossible de générer l’alerte.' });
   res.json({ ok: true, body: result.body, count: result.count });
-});
+}));
 
-router.post('/alerts/read', requireAuth, (req, res) => {
-  db.prepare('UPDATE sms_messages SET is_read = 1 WHERE user_id = ?').run(req.user.id);
+router.post('/alerts/read', requireAuth, wrap(async (req, res) => {
+  await db.prepare('UPDATE sms_messages SET is_read = 1 WHERE user_id = ?').run(req.user.id);
   res.json({ ok: true });
-});
+}));
 
 // ================= ENTREPRISES =================
 function companyRow(r, jobCount) {
@@ -325,46 +344,46 @@ function companyRow(r, jobCount) {
   };
 }
 
-router.get('/companies', (req, res) => {
-  const rows = db.prepare(`
+router.get('/companies', wrap(async (req, res) => {
+  const rows = await db.prepare(`
     SELECT c.*, COUNT(j.id) AS job_count
     FROM companies c LEFT JOIN jobs j ON j.company_id = c.id AND j.is_active = 1
     GROUP BY c.id ORDER BY job_count DESC, c.name
   `).all();
   res.json({ companies: rows.map((r) => companyRow(r)) });
-});
+}));
 
-router.get('/companies/:id(\\d+)', (req, res) => {
-  const row = db.prepare('SELECT * FROM companies WHERE id = ?').get(Number(req.params.id));
+router.get('/companies/:id(\\d+)', wrap(async (req, res) => {
+  const row = await db.prepare('SELECT * FROM companies WHERE id = ?').get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'Entreprise introuvable.' });
   const uid = getUserFromRequest(req);
-  const profile = uid ? publicUser(loadUser(uid)) : null;
-  const jobs = withMatch(profile, searchJobs({})).filter((j) => j.company && j.company.id === row.id);
+  const profile = uid ? publicUser(await loadUser(uid)) : null;
+  const jobs = withMatch(profile, await searchJobs({})).filter((j) => j.company && j.company.id === row.id);
   res.json({ company: companyRow(row, jobs.length), jobs });
-});
+}));
 
 // ================= CONSEILS =================
-router.get('/advice', (req, res) => {
-  const rows = db.prepare('SELECT id, title, category, excerpt, minutes, color FROM advice ORDER BY id').all();
+router.get('/advice', wrap(async (req, res) => {
+  const rows = await db.prepare('SELECT id, title, category, excerpt, minutes, color FROM advice ORDER BY id').all();
   res.json({ advice: rows });
-});
+}));
 
-router.get('/advice/:id(\\d+)', (req, res) => {
-  const row = db.prepare('SELECT * FROM advice WHERE id = ?').get(Number(req.params.id));
+router.get('/advice/:id(\\d+)', wrap(async (req, res) => {
+  const row = await db.prepare('SELECT * FROM advice WHERE id = ?').get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'Conseil introuvable.' });
   res.json({ article: row });
-});
+}));
 
 // ================= DASHBOARD / STATS =================
-router.get('/dashboard', requireAuth, (req, res) => {
+router.get('/dashboard', requireAuth, wrap(async (req, res) => {
   const profile = publicUser(req.user);
   const completion = profileCompletion(profile);
-  const recommended = withMatch(profile, searchJobs({}))
+  const recommended = withMatch(profile, await searchJobs({}))
     .filter((j) => j.match)
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, 4);
 
-  const appStats = db.prepare(`
+  const appStats = await db.prepare(`
     SELECT COUNT(*) AS total,
       SUM(CASE WHEN status='En attente' THEN 1 ELSE 0 END) AS pending,
       SUM(CASE WHEN status='En cours' THEN 1 ELSE 0 END) AS inProgress,
@@ -372,34 +391,40 @@ router.get('/dashboard', requireAuth, (req, res) => {
     FROM applications WHERE user_id = ?
   `).get(req.user.id);
 
-  const unread = db.prepare('SELECT COUNT(*) AS n FROM sms_messages WHERE user_id = ? AND is_read = 0').get(req.user.id).n;
-  const lastSms = db.prepare('SELECT id, body, sent_at FROM sms_messages WHERE user_id = ? ORDER BY sent_at DESC LIMIT 1').get(req.user.id);
-  const alerts = loadAlerts(req.user.id);
+  const unreadRow = await db.prepare('SELECT COUNT(*) AS n FROM sms_messages WHERE user_id = ? AND is_read = 0').get(req.user.id);
+  const lastSms = await db.prepare('SELECT id, body, sent_at FROM sms_messages WHERE user_id = ? ORDER BY sent_at DESC LIMIT 1').get(req.user.id);
+  const alerts = await loadAlerts(req.user.id);
 
   res.json({
     greeting: { fullName: profile.fullName, city: profile.city },
     recommended,
     completion,
     applications: {
-      total: appStats.total || 0,
-      pending: appStats.pending || 0,
-      inProgress: appStats.inProgress || 0,
-      accepted: appStats.accepted || 0,
+      total: Number(appStats?.total || 0),
+      pending: Number(appStats?.pending || 0),
+      inProgress: Number(appStats?.inProgress || 0),
+      accepted: Number(appStats?.accepted || 0),
     },
-    unreadSms: unread,
+    unreadSms: Number(unreadRow?.n || 0),
     lastSms: lastSms ? { id: lastSms.id, body: lastSms.body, sentAt: lastSms.sent_at } : null,
     alertsEnabled: !!alerts.enabled,
     alertsTime: alerts.send_time,
   });
-});
+}));
 
-router.get('/stats', (req, res) => {
+router.get('/stats', wrap(async (req, res) => {
+  const [jobs, companies, cities, users] = await Promise.all([
+    db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1').get(),
+    db.prepare('SELECT COUNT(*) AS n FROM companies').get(),
+    db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1').get(),
+    db.prepare('SELECT COUNT(*) AS n FROM users').get(),
+  ]);
   res.json({
-    jobs: db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1').get().n,
-    companies: db.prepare('SELECT COUNT(*) AS n FROM companies').get().n,
-    cities: db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1').get().n,
-    users: db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
+    jobs: Number(jobs.n),
+    companies: Number(companies.n),
+    cities: Number(cities.n),
+    users: Number(users.n),
   });
-});
+}));
 
 export default router;

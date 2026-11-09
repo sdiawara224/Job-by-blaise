@@ -36,18 +36,18 @@ if (fs.existsSync(DIST)) {
 }
 
 // ---------- planificateur d'alertes SMS (heure choisie par l'utilisateur) ----------
-function runDueAlerts() {
+async function runDueAlerts() {
   try {
     const now = new Date();
     const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const today = now.toISOString().slice(0, 10);
-    const due = db.prepare(`
+    const due = await db.prepare(`
       SELECT u.* FROM users u
       JOIN alert_settings a ON a.user_id = u.id
       WHERE a.enabled = 1 AND a.send_time = ? AND (a.last_sent_on IS NULL OR a.last_sent_on != ?)
     `).all(hhmm, today);
     for (const u of due) {
-      const r = sendAlertToUser(u);
+      const r = await sendAlertToUser(u);
       if (r) console.log(`[SMS] Alerte envoyée à ${u.email} (${r.count} offre${r.count > 1 ? 's' : ''})`);
     }
   } catch (err) {

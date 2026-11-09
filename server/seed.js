@@ -278,22 +278,26 @@ Dans Job by blaise, la lettre se joint en un clic à votre candidature depuis la
   },
 ];
 
-export function seed({ force = false } = {}) {
-  initSchema();
+export async function seed({ force = false } = {}) {
+  await initSchema();
 
-  const jobCount = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n;
+  const counter = await db.prepare('SELECT COUNT(*) AS n FROM jobs').get();
+  const jobCount = Number(counter?.n || 0);
   if (jobCount > 0 && !force) return { skipped: true, jobs: jobCount };
 
   if (force) {
     for (const t of ['applications', 'sms_messages', 'alert_settings', 'jobs', 'companies', 'advice', 'users']) {
-      db.exec(`DELETE FROM ${t};`);
+      await db.exec(`DELETE FROM ${t};`);
     }
   }
 
   const insCompany = db.prepare(
     'INSERT INTO companies (name, sector, city, description, color, founded_year, staff_size) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
-  const companyIds = COMPANIES.map((c) => Number(insCompany.run(...c).lastInsertRowid));
+  const companyIds = [];
+  for (const c of COMPANIES) {
+    companyIds.push(Number((await insCompany.run(...c)).lastInsertRowid));
+  }
 
   const insJob = db.prepare(`
     INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max,
@@ -307,7 +311,7 @@ export function seed({ force = false } = {}) {
     if (used.has(key)) continue;
     used.add(key);
     const tpl = DOMAIN_DESC[domain] || DOMAIN_DESC.Administration;
-    insJob.run(
+    await insJob.run(
       companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
       `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`,
       `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`,
@@ -319,16 +323,16 @@ export function seed({ force = false } = {}) {
   const insAdvice = db.prepare(
     'INSERT INTO advice (title, category, excerpt, content, minutes, color) VALUES (?, ?, ?, ?, ?, ?)'
   );
-  for (const a of ADVICE) insAdvice.run(a.title, a.category, a.excerpt, a.content, a.minutes, a.color);
+  for (const a of ADVICE) await insAdvice.run(a.title, a.category, a.excerpt, a.content, a.minutes, a.color);
 
   // ---- Compte de démonstration : Mamadou Diallo ----
   const email = 'mamadou@jobbyblaise.com';
-  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   let uid;
   if (exists) {
     uid = exists.id;
   } else {
-    uid = Number(db.prepare(`
+    uid = Number((await db.prepare(`
       INSERT INTO users (email, password_hash, full_name, phone, city, title, bio, education,
                          experience_years, skills, job_types, preferred_cities, cv)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -356,12 +360,16 @@ export function seed({ force = false } = {}) {
           { level: 'Baccalauréat série G1', org: 'Lycée de la Corniche, Conakry', period: '2018' },
         ],
       })
-    ).lastInsertRowid);
+    )).lastInsertRowid);
   }
 
-  db.prepare(`
-    INSERT OR REPLACE INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
-    VALUES (?, 1, ?, '07:00', ?, ?, ?, datetime('now'))
+  await db.prepare(`
+    INSERT INTO alert_settings (user_id, enabled, phone, send_time, keywords, cities, contracts, updated_at)
+    VALUES (?, 1, ?, '07:00', ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id) DO UPDATE SET
+      enabled = excluded.enabled, phone = excluded.phone, send_time = excluded.send_time,
+      keywords = excluded.keywords, cities = excluded.cities, contracts = excluded.contracts,
+      updated_at = excluded.updated_at
   `).run(
     uid,
     '+224 622 000 111',
@@ -370,25 +378,34 @@ export function seed({ force = false } = {}) {
     JSON.stringify(['Temps plein', 'CDD'])
   );
 
-  const demoJobs = db.prepare('SELECT id FROM jobs ORDER BY RANDOM() LIMIT 4').all();
+  const demoJobs = await db.prepare('SELECT id FROM jobs ORDER BY RANDOM() LIMIT 4').all();
   const statuses = ['En attente', 'En cours', 'Acceptée', 'Refusée'];
-  demoJobs.forEach((j, i) => {
-    db.prepare(`
-      INSERT OR IGNORE INTO applications (user_id, job_id, cover_letter, status, created_at)
+  for (let i = 0; i < demoJobs.length; i++) {
+    const j = demoJobs[i];
+    await db.prepare(`
+      INSERT INTO applications (user_id, job_id, cover_letter, status, created_at)
       VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, job_id) DO NOTHING
     `).run(uid, j.id, 'Madame, Monsieur,\n\nVivement motivé(e) par ce poste, je vous prie de trouver ma candidature ci-jointe.\n\nCordialement,', statuses[i % statuses.length], D(i + 1));
-  });
+  }
 
   const insSms = db.prepare('INSERT INTO sms_messages (user_id, body, sent_at, is_read) VALUES (?, ?, ?, ?)');
-  insSms.run(uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0);
-  insSms.run(uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1);
-  insSms.run(uid, 'Job by blaise: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → jobbyblaise.com/jobs', D(3), 1);
+  await insSms.run(uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0);
+  await insSms.run(uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1);
+  await insSms.run(uid, 'Job by blaise: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → jobbyblaise.com/jobs', D(3), 1);
 
   return { skipped: false, jobs };
 }
 
 // Exécution directe : npm run seed
 if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
-  const r = seed({ force: true });
-  console.log('Base initialisée :', r);
+  seed({ force: true })
+    .then((r) => {
+      console.log('Base initialisée :', r);
+      process.exit(0);
+    })
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
 }
