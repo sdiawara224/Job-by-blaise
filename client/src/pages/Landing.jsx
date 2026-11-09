@@ -118,7 +118,6 @@ const STEPS = [
 ];
 
 export default function Landing() {
-  const [jobs, setJobs] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [cities, setCities] = useState([]);
   const [q, setQ] = useState('');
@@ -126,7 +125,6 @@ export default function Landing() {
   const nav = useNavigate();
 
   useEffect(() => {
-    api('/jobs?sort=recent').then((d) => setJobs(d.jobs.slice(0, 4))).catch(() => {});
     api('/companies').then((d) => setCompanies(d.companies.slice(0, 6))).catch(() => {});
     api('/jobs/meta').then((m) => setCities(m.cities || [])).catch(() => {});
     document.title = 'Offres d’emploi et recrutement en Guinée et en Afrique | Job by blaise';
@@ -208,45 +206,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 2. DERNIÈRES OFFRES ============ */}
-      <section className="section">
-        <div className="container">
-          <div className="section-head center reveal">
-            <div>
-              <span className="kicker">Offres d'emploi</span>
-              <h2>Les dernières offres d'emploi</h2>
-              <p className="muted">Découvrez les offres d'emploi qui correspondent à vos compétences et aspirations.</p>
-            </div>
-          </div>
-          <div className="mini-jobs-grid reveal stagger">
-            {jobs.map((j) => (
-              <Link to={`/jobs/${j.id}`} className="mini-job" key={j.id}>
-                <div className="mini-job-head">
-                  <span className="company-avatar" style={{ background: j.company?.color }}>
-                    {(j.company?.name || '?').slice(0, 2).toUpperCase()}
-                  </span>
-                  <b className="mini-job-title">{j.title}</b>
-                </div>
-                <span className="mini-job-company">{j.company?.name}</span>
-                <div className="mini-job-meta">
-                  <span><Icon name="pin" size={13} /> {j.city}</span>
-                  <span className="mini-job-tag">{j.contract}</span>
-                </div>
-                <div className="mini-job-req">
-                  <span>Expérience : {j.experienceMin ? `${j.experienceMin} an${j.experienceMin > 1 ? 's' : ''} et plus` : 'Débutant accepté'}</span>
-                  <span>Études : {j.educationMin || 'Non précisé'}</span>
-                </div>
-              </Link>
-            ))}
-            {!jobs.length && <div className="empty">Chargement des offres…</div>}
-          </div>
-          <div className="center-btn">
-            <Link to="/jobs" className="btn btn-outline btn-lg">Voir toutes les offres</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ============ 3. ENTREPRISES ============ */}
+      {/* ============ 2. ENTREPRISES ============ */}
       <section className="section section-soft">
         <div className="container">
           <div className="section-head center reveal">
@@ -266,7 +226,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 4. CV EN 3 CLICS ============ */}
+      {/* ============ 3. CV EN 3 CLICS ============ */}
       <section className="section">
         <div className="container split">
           <div className="split-visual reveal"><CvIllustration /></div>
@@ -284,7 +244,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 5. RECHERCHE ============ */}
+      {/* ============ 4. RECHERCHE ============ */}
       <section className="section section-soft">
         <div className="container split split-reverse">
           <div className="split-copy reveal d1">
@@ -314,7 +274,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 6. REJOIGNEZ L'AVENTURE ============ */}
+      {/* ============ 5. REJOIGNEZ L'AVENTURE ============ */}
       <section className="section">
         <div className="container">
           <div className="section-head center reveal">
