@@ -56,17 +56,23 @@ function runDueAlerts() {
 }
 setInterval(runDueAlerts, 60 * 1000);
 
-app.listen(PORT, '0.0.0.0', () => {
-  const inner = 'Job by blaise — Le bon emploi. Au bon moment.';
-  const width = 2 + inner.length + 1;
-  const rule = '─'.repeat(width);
-  console.log('');
-  console.log(`  ┌${rule}┐`);
-  console.log(`  │  ${inner} │`);
-  console.log(`  └${rule}┘`);
-  console.log(`  API      : http://localhost:${PORT}/api`);
-  console.log(`  Front    : ${fs.existsSync(DIST) ? `http://localhost:${PORT}/ (fichiers statiques)` : 'non buildé → npm run build'}`);
-  console.log(`  Démo     : mamadou@jobbyblaise.com / demo1234`);
-  console.log('');
-  runDueAlerts();
-});
+// Sur Vercel : le module sert de fonction serverless (export de l'app),
+// l'écoute locale est réservée au classique `npm start`.
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    const inner = 'Job by blaise — Le bon emploi. Au bon moment.';
+    const width = 2 + inner.length + 1;
+    const rule = '─'.repeat(width);
+    console.log('');
+    console.log(`  ┌${rule}┐`);
+    console.log(`  │  ${inner} │`);
+    console.log(`  └${rule}┘`);
+    console.log(`  API      : http://localhost:${PORT}/api`);
+    console.log(`  Front    : ${fs.existsSync(DIST) ? `http://localhost:${PORT}/ (fichiers statiques)` : 'non buildé → npm run build'}`);
+    console.log(`  Démo     : mamadou@jobbyblaise.com / demo1234`);
+    console.log('');
+    runDueAlerts();
+  });
+}

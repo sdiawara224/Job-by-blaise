@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_DIR = path.join(__dirname, '..', 'database');
+// Vercel : FS en lecture seule sauf /tmp → base éphémère ré-seedée à chaque cold start
+const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'database');
 const DB_PATH = path.join(DB_DIR, 'jobbyblaise.db');
 
 fs.mkdirSync(DB_DIR, { recursive: true });

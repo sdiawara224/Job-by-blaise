@@ -4,6 +4,9 @@
   "description": "Job by blaise — Trouve les offres qui te correspondent. Plateforme d'emploi Guinée & Afrique de l'Ouest.",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "dev:api": "node server/index.js",
