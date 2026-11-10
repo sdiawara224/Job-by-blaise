@@ -281,51 +281,63 @@ Dans Job by blaise, la lettre se joint en un clic à votre candidature depuis la
 export async function seed({ force = false } = {}) {
   await initSchema();
 
-  const counter = await db.prepare('SELECT COUNT(*) AS n FROM jobs').get();
-  const jobCount = Number(counter?.n || 0);
-  if (jobCount > 0 && !force) return { skipped: true, jobs: jobCount };
-
   if (force) {
     for (const t of ['applications', 'sms_messages', 'alert_settings', 'jobs', 'companies', 'advice', 'users']) {
       await db.exec(`DELETE FROM ${t};`);
     }
   }
 
-  const insCompany = db.prepare(
-    'INSERT INTO companies (name, sector, city, description, color, founded_year, staff_size) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  );
-  const companyIds = [];
-  for (const c of COMPANIES) {
-    companyIds.push(Number((await insCompany.run(...c)).lastInsertRowid));
+  // Idempotent par section : chaque bloc ne s'insère que s'il est vide,
+  // et chaque insertion est groupée en UN SEUL appel RPC (cold start ~1-2 s
+  // au lieu de ~100 appels séquentiels qui expiraient côté client).
+  const countOf = async (table) => {
+    const r = await db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get();
+    return Number(r?.n || 0);
+  };
+
+  // ---- 1. Entreprises (1 RPC) ----
+  if ((await countOf('companies')) === 0) {
+    const ph = `(${Array(7).fill('?').join(', ')})`;
+    await db.prepare(
+      `INSERT INTO companies (name, sector, city, description, color, founded_year, staff_size) VALUES ${COMPANIES.map(() => ph).join(', ')}`
+    ).run(...COMPANIES.flat());
+  }
+  const companyIds = (await db.prepare('SELECT id FROM companies ORDER BY id').all())
+    .map((r) => Number(r.id));
+
+  // ---- 2. Offres (1 RPC) ----
+  let jobCount = await countOf('jobs');
+  if (jobCount === 0) {
+    const used = new Set();
+    const rows = [];
+    for (const [title, ci, city, country, contract, smin, smax, exp, edu, domain, skills, daysAgo] of JOBS) {
+      const key = `${title}@${city}`;
+      if (used.has(key)) continue;
+      used.add(key);
+      const tpl = DOMAIN_DESC[domain] || DOMAIN_DESC.Administration;
+      rows.push([
+        companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
+        `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`,
+        `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`,
+        JSON.stringify(skills), D(daysAgo),
+      ]);
+    }
+    const ph = `(${Array(14).fill('?').join(', ')})`;
+    await db.prepare(
+      `INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max, experience_min, education_min, domain, description, requirements, skills, posted_at) VALUES ${rows.map(() => ph).join(', ')}`
+    ).run(...rows.flat());
+    jobCount = rows.length;
   }
 
-  const insJob = db.prepare(`
-    INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max,
-                      experience_min, education_min, domain, description, requirements, skills, posted_at, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-  `);
-  let jobs = 0;
-  const used = new Set();
-  for (const [title, ci, city, country, contract, smin, smax, exp, edu, domain, skills, daysAgo] of JOBS) {
-    const key = `${title}@${city}`;
-    if (used.has(key)) continue;
-    used.add(key);
-    const tpl = DOMAIN_DESC[domain] || DOMAIN_DESC.Administration;
-    await insJob.run(
-      companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
-      `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`,
-      `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`,
-      JSON.stringify(skills), D(daysAgo)
-    );
-    jobs++;
+  // ---- 3. Conseils (1 RPC) ----
+  if ((await countOf('advice')) === 0) {
+    const ph = `(${Array(6).fill('?').join(', ')})`;
+    await db.prepare(
+      `INSERT INTO advice (title, category, excerpt, content, minutes, color) VALUES ${ADVICE.map(() => ph).join(', ')}`
+    ).run(...ADVICE.flatMap((a) => [a.title, a.category, a.excerpt, a.content, a.minutes, a.color]));
   }
 
-  const insAdvice = db.prepare(
-    'INSERT INTO advice (title, category, excerpt, content, minutes, color) VALUES (?, ?, ?, ?, ?, ?)'
-  );
-  for (const a of ADVICE) await insAdvice.run(a.title, a.category, a.excerpt, a.content, a.minutes, a.color);
-
-  // ---- Compte de démonstration : Mamadou Diallo ----
+  // ---- 4. Compte de démonstration : Mamadou Diallo ----
   const email = 'mamadou@jobbyblaise.com';
   const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   let uid;
@@ -378,23 +390,37 @@ export async function seed({ force = false } = {}) {
     JSON.stringify(['Temps plein', 'CDD'])
   );
 
-  const demoJobs = await db.prepare('SELECT id FROM jobs ORDER BY RANDOM() LIMIT 4').all();
-  const statuses = ['En attente', 'En cours', 'Acceptée', 'Refusée'];
-  for (let i = 0; i < demoJobs.length; i++) {
-    const j = demoJobs[i];
-    await db.prepare(`
-      INSERT INTO applications (user_id, job_id, cover_letter, status, created_at)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(user_id, job_id) DO NOTHING
-    `).run(uid, j.id, 'Madame, Monsieur,\n\nVivement motivé(e) par ce poste, je vous prie de trouver ma candidature ci-jointe.\n\nCordialement,', statuses[i % statuses.length], D(i + 1));
+  // ---- 5. Candidatures démo (1 RPC, une seule fois) ----
+  const appCount = await db.prepare('SELECT COUNT(*) AS n FROM applications WHERE user_id = ?').get(uid);
+  if (Number(appCount?.n || 0) === 0) {
+    const demoJobs = await db.prepare('SELECT id FROM jobs ORDER BY RANDOM() LIMIT 4').all();
+    if (demoJobs.length > 0) {
+      const statuses = ['En attente', 'En cours', 'Acceptée', 'Refusée'];
+      const ph = `(${Array(5).fill('?').join(', ')})`;
+      await db.prepare(
+        `INSERT INTO applications (user_id, job_id, cover_letter, status, created_at) VALUES ${demoJobs.map(() => ph).join(', ')} ON CONFLICT(user_id, job_id) DO NOTHING`
+      ).run(...demoJobs.flatMap((j, i) => [
+        uid, j.id,
+        'Madame, Monsieur,\n\nVivement motivé(e) par ce poste, je vous prie de trouver ma candidature ci-jointe.\n\nCordialement,',
+        statuses[i % statuses.length], D(i + 1),
+      ]));
+    }
   }
 
-  const insSms = db.prepare('INSERT INTO sms_messages (user_id, body, sent_at, is_read) VALUES (?, ?, ?, ?)');
-  await insSms.run(uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0);
-  await insSms.run(uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1);
-  await insSms.run(uid, 'Job by blaise: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → jobbyblaise.com/jobs', D(3), 1);
+  // ---- 6. SMS de démo (1 RPC, une seule fois) ----
+  const smsCount = await db.prepare('SELECT COUNT(*) AS n FROM sms_messages WHERE user_id = ?').get(uid);
+  if (Number(smsCount?.n || 0) === 0) {
+    const ph = `(${Array(4).fill('?').join(', ')})`;
+    await db.prepare(
+      `INSERT INTO sms_messages (user_id, body, sent_at, is_read) VALUES ${ph}, ${ph}, ${ph}`
+    ).run(
+      uid, 'Job by blaise: Bonjour Mamadou, 3 nouvelles offres correspondent à votre profil (Conakry, Temps plein). Postulez → jobbyblaise.com/jobs', D(1), 0,
+      uid, 'Job by blaise: Alerte 7h00 — Assistant Administratif à Conakry, match 91%. Postulez → jobbyblaise.com/jobs', D(2), 1,
+      uid, 'Job by blaise: 2 nouvelles offres logistique à Conakry correspondent à vos critères. Voir → jobbyblaise.com/jobs', D(3), 1
+    );
+  }
 
-  return { skipped: false, jobs };
+  return { skipped: false, jobs: jobCount };
 }
 
 // Exécution directe : npm run seed
