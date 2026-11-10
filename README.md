@@ -3,13 +3,13 @@
 > **Le bon emploi. Au bon moment.**
 > Plateforme d'emploi française pour la Guinée et l'Afrique de l'Ouest : offres, matching, CV, alertes SMS matinales.
 
-![stack](https://img.shields.io/badge/stack-React%20%2B%20Express%20%2B%20SQLite-blue) ![license](https://img.shields.io/badge/licence-MIT-green)
+![stack](https://img.shields.io/badge/stack-React%20%2B%20Express%20%2B%20SQLite%20%2F%20Supabase-blue) ![license](https://img.shields.io/badge/licence-MIT-green)
 
 ---
 
 ## ✨ Fonctionnalités
 
-- **Landing page** structurée en 7 sections : hero + maquette dashboard + bandeau de stats, dernières offres, entreprises, « CV en 3 clics », recherche poste+ville, 3 étapes + builder CV, CTA final & footer.
+- **Landing page** structurée : hero + maquette dashboard + bandeau de stats, entreprises, « CV en 3 clics », recherche poste+ville, 3 étapes + builder CV, CTA final & footer.
 - **Recherche d'emploi** `/jobs` : filtres ville / contrat / domaine, tri récent ou salaire, et **% de match** calculé pour chaque profil.
 - **Fiches offres** `/jobs/:id` : description, compétences, bandeau détaillé du matching (score global + détail par dimension), candidature en un clic avec lettre de motivation.
 - **Entreprises** `/entreprises` + fiches : note, secteur, ville, historique de fondation, offres ouvertes.
@@ -24,7 +24,7 @@
 |---|---|
 | Frontend | React 18 + React Router, Vite 5 |
 | Backend | Node.js + Express 4 |
-| Base | SQLite (`node:sqlite`, natif Node 22) |
+| Base | **Double backend** : SQLite local (`node:sqlite`, zéro dépendance) / **Supabase** (Postgres via RPC sécurisée `app_exec`) — repli automatique si Supabase est injoignable |
 | Contenu | Seed script (18 entreprises, 60 offres, 6 conseils) |
 
 ## 🚀 Démarrage
@@ -59,12 +59,13 @@ Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedé
 │       ├── pages/       # Landing, Jobs, Entreprises, Conseils, App (dashboard, profil…)
 │       └── styles.css   # design system (bleu #2E6BFF, navy, vert #00A868, ambre #F5A524)
 ├── server/
-│   ├── db.js          # schéma + migrations + seed check
+│   ├── db.js          # couche données double backend (SQLite / Supabase) + schéma
 │   ├── seed.js        # 18 entreprises, 60 offres, 6 conseils, compte démo
 │   ├── auth.js        # scrypt + JWT (HS256)
 │   ├── match.js       # moteur de matching pondéré (contrat, ville, compétences, diplôme, expérience)
 │   ├── routes.js      # REST API
 │   └── index.js       # serveur HTTP (SPA dist + API) + scheduler d'alertes 7h00
+├── supabase/          # migration.sql (7 tables schéma jobbyblaise + RPC app_exec)
 ├── database/          # SQLite (auto-seed, ignoré par git)
 └── smoke-test.mjs     # test des endpoints critiques
 ```
@@ -88,14 +89,24 @@ Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedé
 | GET | `/api/advice` · `/api/advice/:id` | conseils carrière |
 | GET | `/api/dashboard` | données de l'espace candidat |
 | GET | `/api/stats` | statistiques publiques |
+| GET | `/api/health` | `{ ok, backend }` — `backend` = `sqlite` ou `supabase` |
 
 ## 🧪 Tests
 
 ```bash
 npm run seed        # (re)crée la base
 npm start &         # serveur sur :3001
-npm run test:smoke  # 16 endpoints critiques
+npm run test:smoke  # 15 endpoints critiques
 ```
+
+## ☁️ Production (Vercel + Supabase)
+
+- **Vercel** sert le build (`dist/`) + l'API serverless (`api/index.js`). Variables d'env **côté serveur uniquement** :
+  - `SUPABASE_URL` — ex. `https://<ref>.supabase.co`
+  - `SUPABASE_KEY` — clé de service (`service_role`), jamais exposée au front (pas de préfixe `VITE_`)
+- Sans ces variables (ou si Supabase est injoignable), l'app fonctionne en **SQLite éphémère** (`/tmp`) avec re-seed automatique.
+- Sur Supabase, les tables vivent dans un schéma dédié **`jobbyblaise`** (le schéma `public` de l'hôte reste intact) ; toutes les requêtes passent par la RPC `public.app_exec` (SECURITY DEFINER, réservée aux rôles de service).
+- **Cron quotidien** (`vercel.json`) : `GET /api/health` à 06:00 UTC — 2 appels DB qui empêchent la pause automatique de Supabase après 7 jours d'inactivité.
 
 ## 🎨 Design system
 
