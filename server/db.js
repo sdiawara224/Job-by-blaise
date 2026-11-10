@@ -263,6 +263,7 @@ export function publicUser(row) {
     id: row.id,
     email: row.email,
     isAdmin: isAdminUser(row),
+    adminAccessExpiresAt: isAdminUser(row) ? process.env.ADMIN_ACCESS_EXPIRES_AT || null : null,
     fullName: row.full_name,
     phone: row.phone,
     city: row.city,

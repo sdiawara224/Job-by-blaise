@@ -151,3 +151,23 @@ test('tris fermés, pagination bornée et filtres d’alertes et de lecture', as
     assert.ok(sms.items.every((s) => Number(s.is_read) === Number(status)));
   }
 });
+
+test('accès temporaire : expiration serveur, date invalide refusée et échéance future autorisée', () => {
+  const keys = ['JBB_SECRET', 'ADMIN_EMAILS', 'ADMIN_ACCESS_EXPIRES_AT'];
+  const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    process.env.JBB_SECRET = secret;
+    process.env.ADMIN_EMAILS = 'admin@example.com';
+    for (const expiry of ['incorrect', new Date(Date.now() - 1000).toISOString()]) {
+      process.env.ADMIN_ACCESS_EXPIRES_AT = expiry;
+      assert.equal(isAdminUser({ email: 'admin@example.com' }), false);
+    }
+    process.env.ADMIN_ACCESS_EXPIRES_AT = new Date(Date.now() + 60000).toISOString();
+    assert.equal(isAdminUser({ email: 'admin@example.com' }), true);
+    assert.equal(isAdminUser({ email: 'autre@example.com' }), false);
+    delete process.env.ADMIN_ACCESS_EXPIRES_AT;
+    assert.equal(isAdminUser({ email: 'admin@example.com' }), true);
+  } finally {
+    for (const key of keys) if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key];
+  }
+});

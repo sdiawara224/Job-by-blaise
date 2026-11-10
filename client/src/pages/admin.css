@@ -326,3 +326,7 @@
   .adm-dialog-foot:has(.adm-btn:nth-of-type(3))>.adm-btn:first-of-type { flex-basis:100%; }
   .adm-record-state kbd { display:none; }
 }
+
+.adm-trial-banner { display:flex; align-items:flex-start; gap:12px; border:1px solid #f1dbab; border-radius:10px; padding:17px 20px; margin-bottom:22px; background:#fff8e9; color:#9c7428; font-size:12px; }
+.adm-trial-banner svg { flex-shrink:0; margin-top:3px; }
+.adm-trial-banner p { margin-top:5px; font-size:11px; line-height:1.7; }

@@ -33,12 +33,19 @@ function Overview({ data, open }) {
 }
 
 export default function Admin() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
   const { section: routeSection } = useParams();
   const section = routeSection || 'overview';
   const cfg = SECTIONS[section];
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => {
+    if (!user?.isAdmin || !user.adminAccessExpiresAt) return;
+    const remaining = Date.parse(user.adminAccessExpiresAt) - Date.now();
+    if (remaining <= 0) { updateUser({ isAdmin: false }); return; }
+    const timer = setTimeout(() => updateUser({ isAdmin: false }), Math.min(remaining, 2147483647));
+    return () => clearTimeout(timer);
+  }, [user?.isAdmin, user?.adminAccessExpiresAt]);
   const [contentDirty, setContentDirty] = useState(false);
   const [summary, setSummary] = useState(null), [items, setItems] = useState([]), [total, setTotal] = useState(0), [page, setPage] = useState(1), [q, setQ] = useState(''), [status, setStatus] = useState(''), [busy, setBusy] = useState(true), [error, setError] = useState(''), [notice, setNotice] = useState(''), [refresh, setRefresh] = useState(0), [editor, setEditor] = useState(null), [companies, setCompanies] = useState([]), [menu, setMenu] = useState(false), [pendingDelete, setPendingDelete] = useState(null), [sort, setSort] = useState('newest'), [loadedKey, setLoadedKey] = useState('');
   const listKey = JSON.stringify([section, q, status, sort, page, refresh]);
@@ -81,6 +88,7 @@ export default function Admin() {
     {menu && <button className="adm-scrim" aria-label="Fermer le menu" onClick={() => setMenu(false)} />}
     <div className="adm-main"><header className="adm-topbar"><div><button className="adm-icon-btn adm-menu-toggle" aria-label="Ouvrir le menu" aria-expanded={menu} onClick={() => setMenu(!menu)}><Icon name="menu" /></button><span>Administration <i>/</i> <b>{cfg.label}</b></span></div><div><span className="adm-secure"><Icon name="lock" size={14} /> Accès sécurisé</span><Link to="/" className="adm-btn">Voir le site <Icon name="external" size={15} /></Link></div></header>
       <main className="adm-workspace"><div className="adm-page-heading"><div><span className="adm-eyebrow">JOB BY BLAISE · BACK-OFFICE</span><h1>{cfg.label}</h1><p>{cfg.description}</p></div>{cfg.columns && !cfg.noCreate && <button className="adm-btn primary" onClick={() => setEditor({ ...cfg.defaults })}><Icon name="plus" size={17} /> Créer {cfg.singular}</button>}</div>
+        {user.adminAccessExpiresAt && <div className="adm-trial-banner" role="status"><Icon name="clock" size={19} /><div><b>Accès administrateur temporaire de test</b><p>Droits retirés automatiquement à {new Date(user.adminAccessExpiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} (heure de votre appareil). Ce compte possède des identifiants publics : n’y ajoutez aucune donnée sensible.</p></div></div>}
         {notice && <div className="adm-toast" role="status"><Icon name="check" size={18} />{notice}<button aria-label="Fermer la notification" onClick={() => setNotice('')}>×</button></div>}
         {error && <div className="adm-error" role="alert">{error} <button className="adm-btn" onClick={() => setRefresh((v) => v + 1)}>Réessayer</button></div>}
         {section === 'overview' && (summary ? <Overview data={summary} open={openCreate} /> : !error && <div className="adm-empty">Chargement de votre tableau de bord…</div>)}
