@@ -9,7 +9,7 @@
 
 ## ✨ Fonctionnalités
 
-- **Landing page** structurée : hero + maquette dashboard + bandeau de stats, entreprises, « CV en 3 clics », recherche poste+ville, 3 étapes + builder CV, CTA final & footer.
+- **Landing page** : hero de recherche poste + ville avec compteur réel d’offres, bandeau horizontal d’entreprises juste en dessous, « CV en 3 clics », matching, 3 étapes + builder CV, CTA final et footer.
 - **Recherche d'emploi** `/jobs` : filtres ville / contrat / domaine, tri récent ou salaire, et **% de match** calculé pour chaque profil.
 - **Fiches offres** `/jobs/:id` : description, compétences, bandeau détaillé du matching (score global + détail par dimension), candidature en un clic avec lettre de motivation.
 - **Entreprises** `/entreprises` + fiches : note, secteur, ville, historique de fondation, offres ouvertes.
@@ -96,7 +96,8 @@ Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedé
 ```bash
 npm run seed        # (re)crée la base
 npm start &         # serveur sur :3001
-npm run test:smoke  # 15 endpoints critiques
+WITH_TOKEN=1 npm run test:smoke  # 15 endpoints critiques
+npm test            # régressions : dates SQLite/Postgres, landing, recherche, erreurs API
 ```
 
 ## ☁️ Production (Vercel + Supabase)

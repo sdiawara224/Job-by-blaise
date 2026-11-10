@@ -1348,3 +1348,66 @@ h3 { font-size: 1.1rem; font-weight: 700; }
   .jobs-search-hero, .jobs-search-hero { flex-wrap: wrap; border-radius: 20px; padding: 12px 14px; }
   .jobs-search-hero .btn { width: 100%; }
 }
+
+/* Search-first landing — spacious hero + recruiting wordmarks */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.job-search-hero { position: relative; isolation: isolate; overflow: hidden; background: #eef4ff; color: var(--navy); }
+.search-hero-inner { position: relative; z-index: 1; padding-top: 88px; padding-bottom: 82px; }
+.search-hero-eyebrow { display: block; font-size: 11px; font-weight: 750; letter-spacing: 2.1px; color: var(--blue-dark); margin-bottom: 24px; }
+.search-hero-inner h1 { max-width: 940px; font-size: clamp(36px, 4.3vw, 60px); line-height: 1.15; letter-spacing: -2px; font-weight: 800; }
+.search-hero-inner h1 > span { display: block; color: var(--blue); margin-bottom: 8px; }
+.search-hero-break { display: none; }
+.search-hero-inner > p { font-size: clamp(16px, 1.6vw, 21px); font-weight: 600; color: #466086; margin-top: 30px; max-width: 960px; }
+.search-hero-sun { position: absolute; z-index: 0; width: 370px; height: 370px; right: -175px; top: -125px; background: var(--amber); border-radius: 50%; }
+.search-hero-cloud { position: absolute; z-index: 0; width: 105px; height: 70px; background: white; border-radius: 70px; top: 175px; right: -22px; opacity: .95; }
+.search-hero-cloud::before, .search-hero-cloud::after { content: ''; position: absolute; border-radius: 50%; background: white; }
+.search-hero-cloud::before { width: 75px; height: 75px; left: -22px; top: -7px; }
+.search-hero-cloud::after { width: 70px; height: 70px; top: -32px; left: 25px; }
+.hero-search-bar { display: flex; align-items: center; background: white; border: 1px solid #e1e8f2; border-radius: 60px; padding: 12px; box-shadow: 0 5px 8px #0a1b4d0a, 0 16px 38px #0a1b4d05; margin-top: 34px; width: 100%; }
+.hero-search-field { display: flex; align-items: center; gap: 18px; flex: 1; min-width: 0; padding: 8px 24px; color: var(--navy); }
+.hero-search-field > .icon { flex-shrink: 0; }
+.hero-search-field input, .hero-search-field select { border: 0; background: transparent; box-shadow: none; width: 100%; min-width: 0; padding: 10px 0; border-radius: 0; font-size: 16px; }
+.hero-search-field input::placeholder { color: var(--muted); opacity: 1; }
+.hero-search-field:focus-within { outline: 2px solid var(--blue); outline-offset: -2px; border-radius: 32px; }
+.hero-search-field input:focus, .hero-search-field select:focus { outline: none; box-shadow: none; }
+.hero-search-city { border-left: 1px solid #d4deef; }
+.hero-search-submit { border-radius: 40px; background: var(--navy); color: white; padding: 19px 27px; gap: 18px; flex-shrink: 0; }
+.hero-search-submit:hover { background: var(--blue); color: white; }
+.search-hero-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 22px; font-size: 12px; }
+.search-hero-bottom > span { color: #566780; margin-right: 3px; }
+.search-hero-bottom a { color: #37577f; border: 1px solid #d3def0; border-radius: 30px; padding: 5px 13px; transition: background .2s; }
+.search-hero-bottom a:hover { background: white; color: var(--blue); }
+.recruiters-strip { padding: 43px 0 44px; background: #f8faff; text-align: center; border-bottom: 1px solid var(--line); }
+.recruiters-strip h2 { font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -.7px; color: var(--navy); }
+.recruiters-strip h2 span { color: var(--blue); }
+.recruiters-caption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.recruiters-rail { display: flex; overflow-x: auto; gap: 14px; padding: 20px 4px 16px; margin: 12px -4px 21px; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #cbd8ef transparent; }
+.recruiter-tile { flex: 0 0 164px; min-height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px 14px; background: white; border: 1px solid #edf0f6; border-radius: 13px; box-shadow: 0 2px 7px #0a1b4d06; scroll-snap-align: start; transition: transform .2s, box-shadow .2s; }
+.recruiter-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 18px #0a1b4d10; }
+.recruiter-monogram { display: grid; place-items: center; height: 44px; min-width: 52px; color: var(--company-color, var(--blue)); font-size: 31px; font-weight: 850; letter-spacing: -2px; line-height: 1; }
+.recruiter-name { font-size: 12px; font-weight: 750; line-height: 1.35; color: var(--navy); max-width: 140px; }
+.recruiters-cta { min-width: 270px; border-radius: 10px; gap: 25px; }
+@media (min-width: 1500px) { .search-hero-inner { padding-top: 100px; padding-bottom: 95px; } }
+@media (max-width: 800px) {
+  .search-hero-inner { padding-top: 58px; padding-bottom: 48px; }
+  .search-hero-inner h1 { letter-spacing: -1.4px; font-size: clamp(33px, 6vw, 46px); }
+  .search-hero-inner > p { max-width: 85%; }
+  .search-hero-sun { width: 240px; height: 240px; right: -155px; top: -95px; }
+  .search-hero-cloud { top: 125px; right: -65px; transform: scale(.75); }
+  .hero-search-bar { flex-wrap: wrap; border-radius: 22px; padding: 10px; }
+  .hero-search-field { flex-basis: 50%; padding: 7px 12px; gap: 10px; }
+  .hero-search-field input, .hero-search-field select { font-size: 14px; }
+  .hero-search-submit { width: 100%; justify-content: center; padding: 15px; margin-top: 7px; border-radius: 13px; }
+}
+@media (max-width: 520px) {
+  .search-hero-eyebrow { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 18px; }
+  .search-hero-inner h1 { font-size: 35px; max-width: 350px; }
+  .search-hero-inner > p { font-size: 16px; margin-top: 23px; max-width: 95%; }
+  .hero-search-bar { margin-top: 25px; }
+  .hero-search-field { flex-basis: 100%; padding: 6px 13px; }
+  .hero-search-city { border-left: none; border-top: 1px solid var(--line); }
+  .hero-search-field input, .hero-search-field select { font-size: 15px; padding: 12px 0; }
+  .recruiters-strip { padding: 30px 0; }
+  .recruiter-tile { flex-basis: 145px; min-height: 124px; }
+  .recruiters-cta { width: 100%; min-width: 0; }
+}

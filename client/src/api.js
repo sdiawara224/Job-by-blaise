@@ -31,8 +31,13 @@ export const fmtSalary = (min, max) => {
 };
 
 export const fmtDate = (iso) => {
-  if (!iso) return '';
-  const d = new Date(String(iso).replace(' ', 'T') + (String(iso).includes('Z') ? '' : 'Z'));
+  // Postgres renvoie un offset (+00:00), SQLite aucun : ajouter Z uniquement
+  // en l'absence de fuseau, sinon la date devient invalide (…+00:00Z).
+  const value = String(iso || '').trim().replace(' ', 'T');
+  if (!value) return 'Date non précisée';
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  const d = new Date(value + (hasZone ? '' : 'Z'));
+  if (Number.isNaN(d.getTime())) return 'Date non précisée';
   const days = Math.floor((Date.now() - d.getTime()) / 86400000);
   if (days <= 0) return "Aujourd'hui";
   if (days === 1) return 'Hier';

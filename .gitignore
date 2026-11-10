@@ -6,3 +6,5 @@ image-search/
 *.log
 .DS_Store
 .env
+
+.cache/

@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
-import CompanyCard from '../components/CompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
-import heroWoman from '../assets/hero-woman.png';
 import { api } from '../api.js';
 
 /* ---------- Illustrations SVG ---------- */
@@ -119,13 +117,19 @@ const STEPS = [
 
 export default function Landing() {
   const [companies, setCompanies] = useState([]);
+  const [companiesStatus, setCompaniesStatus] = useState('loading');
+  const [jobCount, setJobCount] = useState(null);
   const [cities, setCities] = useState([]);
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');
   const nav = useNavigate();
 
   useEffect(() => {
-    api('/companies').then((d) => setCompanies(d.companies.slice(0, 6))).catch(() => {});
+    api('/companies').then((d) => {
+      setCompanies(d.companies.slice(0, 10));
+      setCompaniesStatus('ready');
+    }).catch(() => setCompaniesStatus('error'));
+    api('/stats').then((d) => setJobCount(d.jobs)).catch(() => {});
     api('/jobs/meta').then((m) => setCities(m.cities || [])).catch(() => {});
     document.title = 'Offres d’emploi et recrutement en Guinée et en Afrique | Job by blaise';
   }, []);
@@ -133,7 +137,7 @@ export default function Landing() {
   const search = (e) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (q) params.set('search', q);
+    if (q.trim()) params.set('search', q.trim());
     if (city) params.set('city', city);
     nav(`/jobs${params.toString() ? `?${params}` : ''}`);
   };
@@ -142,87 +146,63 @@ export default function Landing() {
     <div className="landing">
       <Navbar />
 
-      {/* ============ 1. HERO ============ */}
-      <section className="hero">
-        <div className="container hero-inner">
-          <div className="hero-copy reveal">
-            <h1>
-              Transformez votre<br />
-              carrière avec{' '}
-              <span className="hero-zig">
-                Job by <span className="logo-os">blaise</span>
-                <svg className="hero-zig-line" viewBox="0 0 140 14" preserveAspectRatio="none" aria-hidden="true">
-                  <path
-                    d="M3 9 L13 4 L23 9 L33 4 L43 9 L53 4 L63 9 L73 4 L83 9 L93 4 L103 9 L113 4 L123 9 L133 4"
-                    fill="none" stroke="#F5A524" strokeWidth="3"
-                    strokeLinecap="round" strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </h1>
-            <p className="hero-sub">
-              Créez un CV moderne en quelques minutes et connectez-vous aux
-              meilleures opportunités d'emploi en Guinée et en Afrique de l'Ouest.
-              <b className="hero-sub-strong">Votre prochain emploi n'attend que vous !</b>
-            </p>
-            <div className="hero-cta">
-              <Link to="/jobs" className="btn btn-primary btn-xl">Trouver un job</Link>
-              <Link to="/inscription" className="btn btn-outline btn-xl">Créer mon CV</Link>
-            </div>
-          </div>
-
-          <div className="hero-visual reveal d2">
-            <div className="hero-stage">
-              <span className="hero-blob hero-blob-blue" aria-hidden="true" />
-              <span className="hero-blob hero-blob-navy" aria-hidden="true" />
-              <span className="hero-blob hero-blob-stripes" aria-hidden="true">
-                <svg viewBox="0 0 120 120" aria-hidden="true">
-                  <g stroke="#D6DCEB" strokeWidth="5" strokeLinecap="round">
-                    <line x1="18" y1="86" x2="52" y2="52" />
-                    <line x1="38" y1="94" x2="76" y2="56" />
-                    <line x1="60" y1="96" x2="96" y2="60" />
-                    <line x1="84" y1="92" x2="108" y2="68" />
-                  </g>
-                </svg>
-              </span>
-              <img
-                className="hero-photo" src={heroWoman}
-                alt="Candidate souriante en chemise jaune, bras croisés — Job by blaise"
-              />
-              <div className="hero-float hero-float-accept">
-                <span className="float-check"><Icon name="check" size={17} /></span>
-                <b>Candidature<br />Acceptée</b>
-              </div>
-              <div className="hero-float hero-float-flow">
-                <span className="flow-avatar"><Icon name="profile" size={19} /></span>
-                <span className="flow-arrows" aria-hidden="true">❯❯❯</span>
-                <span className="flow-cv">
-                  <Icon name="advice" size={18} />
-                  <i className="flow-dot" aria-hidden="true">✓</i>
-                </span>
-              </div>
-            </div>
+      {/* ============ 1. HERO RECHERCHE ============ */}
+      <section className="job-search-hero" aria-labelledby="job-search-title">
+        <div className="search-hero-sun" aria-hidden="true" />
+        <div className="search-hero-cloud" aria-hidden="true" />
+        <div className="container search-hero-inner">
+          <span className="search-hero-eyebrow">LE BON EMPLOI. AU BON MOMENT.</span>
+          <h1 id="job-search-title">
+            <span>{jobCount === null ? 'Des' : new Intl.NumberFormat('fr-FR').format(jobCount)} offres d’emploi</span>
+            en Guinée et en<br className="search-hero-break" /> Afrique de l’Ouest
+          </h1>
+          <p>Votre job de rêve vous attend… trouvez l’opportunité qui vous ressemble !</p>
+          <form className="hero-search-bar" onSubmit={search} role="search" aria-label="Rechercher une offre d’emploi">
+            <label className="hero-search-field">
+              <Icon name="search" size={26} />
+              <span className="sr-only">Poste ou mot-clé</span>
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Quel job vous fait vibrer ?" />
+            </label>
+            <label className="hero-search-field hero-search-city">
+              <Icon name="pin" size={26} />
+              <span className="sr-only">Ville recherchée</span>
+              <select value={city} onChange={(e) => setCity(e.target.value)}>
+                <option value="">Où voulez-vous travailler ?</option>
+                {cities.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </label>
+            <button type="submit" className="btn hero-search-submit">Rechercher <span aria-hidden="true">↗</span></button>
+          </form>
+          <div className="search-hero-bottom">
+            <span>À découvrir :</span>
+            {['Administration', 'Informatique', 'Logistique'].map((term) => (
+              <Link key={term} to={`/jobs?search=${encodeURIComponent(term)}`}>{term}</Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ============ 2. ENTREPRISES ============ */}
-      <section className="section section-soft">
+      {/* ============ 2. BANDEAU ENTREPRISES ============ */}
+      <section className="recruiters-strip" aria-labelledby="recruiters-title">
         <div className="container">
-          <div className="section-head center reveal">
-            <div>
-              <span className="kicker">Talents & entreprises</span>
-              <h2>Les entreprises qui recrutent</h2>
-              <p className="muted">Explorez les entreprises qui recrutent et découvrez les opportunités qu'elles offrent.</p>
-            </div>
+          <h2 id="recruiters-title">Ils recrutent sur Job by <span>blaise</span></h2>
+          <p className="recruiters-caption">Des entreprises d’ici. Des opportunités pour vous.</p>
+          <div className="recruiters-rail" tabIndex={0} role="region" aria-label="Entreprises qui recrutent, défilement horizontal">
+            {companies.map((c) => (
+              <Link key={c.id} to={`/entreprises/${c.id}`} className="recruiter-tile" style={{ '--company-color': c.color }}>
+                <span className="recruiter-monogram" aria-hidden="true">{c.name.split(' ').map((w) => w[0]).slice(0, 2).join('')}</span>
+                <span className="recruiter-name">{c.name}</span>
+              </Link>
+            ))}
+            {!companies.length && (
+              <p className="muted" role="status">
+                {companiesStatus === 'loading' ? 'Chargement des entreprises…'
+                  : companiesStatus === 'error' ? 'Les entreprises sont momentanément indisponibles. Réessayez plus tard.'
+                  : 'De nouvelles entreprises arrivent bientôt.'}
+              </p>
+            )}
           </div>
-          <div className="company-grid reveal stagger">
-            {companies.map((c) => <CompanyCard key={c.id} company={c} />)}
-            {!companies.length && <div className="empty">Chargement des entreprises…</div>}
-          </div>
-          <div className="center-btn">
-            <Link to="/entreprises" className="btn btn-outline btn-lg">Découvrir toutes les entreprises</Link>
-          </div>
+          <Link to="/jobs" className="btn btn-primary recruiters-cta">Voir toutes les offres <span aria-hidden="true">→</span></Link>
         </div>
       </section>
 
