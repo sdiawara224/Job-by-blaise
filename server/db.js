@@ -113,6 +113,11 @@ const SQLITE_DDL = `
     minutes INTEGER DEFAULT 4,
     color TEXT DEFAULT '#2E6BFF'
   );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_companies_name ON companies (name);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_jobs_title_city ON jobs (title, city);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_advice_title ON advice (title);
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_sms_user_body ON sms_messages (user_id, body);
 `;
 
 function sqliteStmt(sql) {

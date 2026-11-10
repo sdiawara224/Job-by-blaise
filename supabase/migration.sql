@@ -110,6 +110,14 @@ alter table jobbyblaise.alert_settings enable row level security;
 alter table jobbyblaise.sms_messages   enable row level security;
 alter table jobbyblaise.advice         enable row level security;
 
+-- ------------------------------------- 2bis. CONTRAINTES UNIQUES (anti-course)
+-- Les inserts seed utilisent ON CONFLICT DO NOTHING : deux lambdas concurrents
+-- ne peuvent pas doubler — l'index tranchent.
+create unique index if not exists ux_companies_name      on jobbyblaise.companies (name);
+create unique index if not exists ux_jobs_title_city     on jobbyblaise.jobs (title, city);
+create unique index if not exists ux_advice_title        on jobbyblaise.advice (title);
+create unique index if not exists ux_sms_user_body       on jobbyblaise.sms_messages (user_id, body);
+
 -- ------------------------------------------------- 3. RPC app_exec
 -- Reçoit { p_kind: 'one'|'rows'|'run', p_sql: <SQL avec ?>, p_params: [...] }
 -- et renvoie : row | [rows] | { changes, lastInsertRowid }.

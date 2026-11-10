@@ -16,6 +16,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     console.log(`${new Date().toISOString()}  ${req.method} ${req.path}`);
+    res.set('Cache-Control', 'no-store'); // jamais de cache sur l'API
   }
   next();
 });
