@@ -1411,3 +1411,39 @@ h3 { font-size: 1.1rem; font-weight: 700; }
   .recruiter-tile { flex-basis: 145px; min-height: 124px; }
   .recruiters-cta { width: 100%; min-width: 0; }
 }
+
+/* Featured employers — immediately below the recruiting strip */
+.featured-companies { background: #f8faff; padding: 28px 0 54px; }
+.featured-companies-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.featured-company { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: white; box-shadow: 0 3px 12px #0a1b4d03; transition: transform .2s, box-shadow .2s; }
+.featured-company:hover { text-decoration: none; transform: translateY(-5px); box-shadow: var(--shadow-md); }
+.featured-company:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+.featured-company-cover { position: relative; overflow: hidden; min-height: 200px; padding: 24px; color: white; background: linear-gradient(125deg, var(--company-color), #0a1b4d); }
+.featured-company-sector { position: relative; z-index: 1; display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; opacity: .9; max-width: 80%; }
+.featured-company-cover > strong { position: relative; z-index: 1; display: block; margin-top: 16px; font-size: clamp(22px, 2.2vw, 30px); line-height: 1.12; letter-spacing: -.8px; }
+.featured-company-cover em { font-style: normal; color: #ffd477; }
+.featured-company-art { position: absolute; right: -4px; bottom: -6px; height: 190px; width: 170px; }
+.featured-company-content { position: relative; display: flex; flex: 1; flex-direction: column; padding: 42px 24px 24px; }
+.featured-company-logo { position: absolute; top: -57px; left: 24px; display: grid; place-items: center; width: 78px; height: 78px; background: var(--company-color); color: white; border: 3px solid white; border-radius: 15px; font-size: 26px; font-weight: 800; letter-spacing: -1px; box-shadow: 0 3px 8px #0a1b4d10; }
+.featured-company h3 { color: var(--navy); font-size: 22px; line-height: 1.25; letter-spacing: -.5px; text-transform: uppercase; margin: 0 0 16px; overflow-wrap: anywhere; }
+.featured-company-facts { display: flex; align-content: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 23px; }
+.featured-company-facts > span { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 4px 9px; font-size: 12px; line-height: 1.4; color: var(--navy); background: #fff4da; border: 1px solid #f4d68a; border-radius: 24px; }
+.featured-company-facts svg { flex-shrink: 0; }
+.featured-company-bottom { margin-top: auto; padding-top: 17px; border-top: 1px solid #edf0f6; display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--ink); font-size: 14px; }
+.featured-company-arrow { color: var(--company-color); font-size: 22px; }
+.featured-companies-empty { text-align: center; padding: 24px 0; }
+@media (max-width: 900px) {
+  .featured-companies-grid { gap: 16px; }
+  .featured-company-cover { min-height: 185px; padding: 18px; }
+  .featured-company-content { padding: 38px 18px 20px; }
+  .featured-company-logo { left: 18px; }
+  .featured-company h3 { font-size: 18px; }
+}
+@media (max-width: 700px) {
+  .featured-companies-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; gap: 22px; }
+  .featured-companies { padding: 22px 0 36px; }
+  .featured-company-cover { min-height: 200px; padding: 22px; }
+  .featured-company-cover > strong { font-size: 29px; }
+  .featured-company-content { padding: 40px 22px 22px; }
+  .featured-company h3 { font-size: 22px; }
+}

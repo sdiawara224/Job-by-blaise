@@ -43,6 +43,27 @@ test('Hero : compteur réel et bandeau entreprises immédiatement après', async
     assert.equal(container.querySelector('.recruiters-cta').getAttribute('href'), '/jobs');
   } finally { await act(async () => root.unmount()); }
 });
+test('Trois grandes cartes entre le bandeau et le CV, avec liens et données réelles', async () => {
+  const companies = Array.from({ length: 4 }, (_, i) => ({
+    id: i + 1, name: `Entreprise ${i + 1}`, color: '#2e6bff', city: 'Conakry',
+    sector: 'Technologie', foundedYear: 2022, staffSize: '11 à 50 collaborateurs', jobCount: i + 1,
+  }));
+  const root = await mount(companies);
+  try {
+    const strip = container.querySelector('.recruiters-strip');
+    const section = strip.nextElementSibling;
+    assert.ok(section.classList.contains('featured-companies'));
+    assert.match(section.nextElementSibling.textContent, /Votre CV moderne en 3 clics/);
+    const cards = section.querySelectorAll('.featured-company');
+    assert.equal(cards.length, 3);
+    assert.equal(cards[0].getAttribute('href'), '/entreprises/1');
+    assert.match(cards[0].textContent, /Conakry/);
+    assert.match(cards[0].textContent, /Créée en 2022/);
+    assert.match(cards[0].textContent, /11 à 50 collaborateurs/);
+    assert.match(cards[0].textContent, /1 offre d’emploi disponible/);
+    assert.match(cards[1].textContent, /2 offres d’emploi disponibles/);
+  } finally { await act(async () => root.unmount()); }
+});
 test('Recherche : ville conservée et mots-clés nettoyés', async () => {
   const root = await mount();
   try {

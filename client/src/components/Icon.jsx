@@ -1,4 +1,6 @@
 export const ICONS = {
+  calendar: 'M5 5h14v15H5V5Zm3-2v4m8-4v4M5 10h14m-11 4h2m4 0h2m-8 3h2',
+  team: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-6 9v-2a6 6 0 0 1 12 0v2H3Zm13-9a3 3 0 0 0 0-6m2 9a5 5 0 0 1 3 4v2h-3',
   home: 'M3 11.5 12 4l9 7.5M5.5 10v9.5h5V15h3v4.5h5V10',
   jobs: 'M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8Zm5-3h6l1.5 3h-9L9 5Zm-5 6h16',
   profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',

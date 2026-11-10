@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
+import FeaturedCompanyCard from '../components/FeaturedCompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import { api } from '../api.js';
@@ -206,7 +207,22 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 3. CV EN 3 CLICS ============ */}
+      {/* ============ 3. ENTREPRISES À DÉCOUVRIR ============ */}
+      <section className="featured-companies" aria-labelledby="featured-companies-title">
+        <div className="container">
+          <h2 className="sr-only" id="featured-companies-title">Découvrez les entreprises qui recrutent</h2>
+          <div className="featured-companies-grid">
+            {companies.slice(0, 3).map((company) => <FeaturedCompanyCard key={company.id} company={company} />)}
+          </div>
+          {!companies.length && <p className="muted featured-companies-empty" role="status">
+            {companiesStatus === 'loading' ? 'Chargement des entreprises…'
+              : companiesStatus === 'error' ? 'Les entreprises sont momentanément indisponibles. Réessayez plus tard.'
+              : 'De nouvelles entreprises arrivent bientôt.'}
+          </p>}
+        </div>
+      </section>
+
+      {/* ============ 4. CV EN 3 CLICS ============ */}
       <section className="section">
         <div className="container split">
           <div className="split-visual reveal"><CvIllustration /></div>
@@ -224,7 +240,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 4. RECHERCHE ============ */}
+      {/* ============ 5. RECHERCHE ============ */}
       <section className="section section-soft">
         <div className="container split split-reverse">
           <div className="split-copy reveal d1">
@@ -254,7 +270,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ============ 5. REJOIGNEZ L'AVENTURE ============ */}
+      {/* ============ 6. REJOIGNEZ L'AVENTURE ============ */}
       <section className="section">
         <div className="container">
           <div className="section-head center reveal">
