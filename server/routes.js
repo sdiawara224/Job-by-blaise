@@ -8,6 +8,7 @@ import {
 import { hashPassword, verifyPassword, createToken, getUserFromRequest } from './auth.js';
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
+import { createAdminRouter, readSiteContent } from './admin.js';
 
 await initSchema();
 await seed(); // auto-seed si la base est vide
@@ -58,6 +59,9 @@ function withMatch(profile, jobs) {
   return jobs.map((j) => ({ ...j, match: computeMatch(profile, j) }));
 }
 
+router.use('/admin', requireAuth, createAdminRouter());
+router.get('/content', wrap(async (req, res) => res.json(await readSiteContent())));
+
 // ================= SANTÉ =================
 router.get('/health', (req, res) => {
   res.json({ ok: true, backend: backendName(), app: 'job-by-blaise' });
@@ -66,18 +70,20 @@ router.get('/health', (req, res) => {
 // ================= AUTH =================
 router.post('/auth/register', wrap(async (req, res) => {
   const { email, password, fullName, phone, city } = req.body || {};
+  const reserved = String(process.env.ADMIN_EMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
+  if (reserved.includes(String(email || '').trim().toLowerCase())) return res.status(403).json({ error: 'Cette adresse est réservée. Contactez l’équipe de la plateforme.' });
   if (!email || !password || !fullName) {
     return res.status(400).json({ error: 'E-mail, mot de passe et nom complet sont requis.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'E-mail invalide.' });
   if (String(password).length < 6) return res.status(400).json({ error: 'Mot de passe : 6 caractères minimum.' });
-  const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(String(email).toLowerCase());
+  const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(String(email).trim().toLowerCase());
   if (exists) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
 
   const info = await db.prepare(`
     INSERT INTO users (email, password_hash, full_name, phone, city, title)
     VALUES (?, ?, ?, ?, ?, '')
-  `).run(String(email).toLowerCase(), hashPassword(password), fullName.trim(), phone || '', city || 'Conakry');
+  `).run(String(email).trim().toLowerCase(), hashPassword(password), fullName.trim(), phone || '', city || 'Conakry');
 
   const uid = Number(info.lastInsertRowid);
   await db.prepare(`
@@ -94,7 +100,7 @@ router.post('/auth/register', wrap(async (req, res) => {
 
 router.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body || {};
-  const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').toLowerCase());
+  const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').trim().toLowerCase());
   if (!user || !verifyPassword(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
   }
@@ -167,7 +173,7 @@ router.get('/jobs/recommended', requireAuth, wrap(async (req, res) => {
 }));
 
 router.get('/jobs/:id(\\d+)', wrap(async (req, res) => {
-  const row = await db.prepare(`${JOB_SELECT} WHERE j.id = ?`).get(Number(req.params.id));
+  const row = await db.prepare(`${JOB_SELECT} WHERE j.id = ? AND j.is_active = 1`).get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'Offre introuvable.' });
   const job = jobRow(row);
   const uid = getUserFromRequest(req);

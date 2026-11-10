@@ -5,6 +5,7 @@ import FeaturedCompanyCard from '../components/FeaturedCompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import { api } from '../api.js';
+import { DEFAULT_CONTENT } from '../siteContent.js';
 
 /* ---------- Illustrations SVG ---------- */
 function CvIllustration() {
@@ -110,13 +111,10 @@ function CvBuilderMock() {
   );
 }
 
-const STEPS = [
-  { n: '1', title: 'Créez votre profil facilement', text: 'Créez votre compte en quelques clics et remplissez votre profil pour indiquer votre situation et vos aspirations.' },
-  { n: '2', title: 'Concevez un CV percutant', text: 'Utilisez nos rubriques optimisées pour créer un CV moderne, professionnel et attractif en quelques minutes.' },
-  { n: '3', title: 'Postulez et soyez recruté', text: 'Postulez en un clic, recevez les offres par SMS dès 7h00 et laissez les entreprises vous contacter.' },
-];
+const STEPS = [{ n: '1' }, { n: '2' }, { n: '3' }];
 
 export default function Landing() {
+  const [content, setContent] = useState(DEFAULT_CONTENT);
   const [companies, setCompanies] = useState([]);
   const [companiesStatus, setCompaniesStatus] = useState('loading');
   const [jobCount, setJobCount] = useState(null);
@@ -126,6 +124,7 @@ export default function Landing() {
   const nav = useNavigate();
 
   useEffect(() => {
+    api('/content').then((d) => { if (d.content) setContent({ ...DEFAULT_CONTENT, ...d.content }); }).catch(() => {});
     api('/companies').then((d) => {
       setCompanies(d.companies.slice(0, 10));
       setCompaniesStatus('ready');
@@ -152,12 +151,12 @@ export default function Landing() {
         <div className="search-hero-sun" aria-hidden="true" />
         <div className="search-hero-cloud" aria-hidden="true" />
         <div className="container search-hero-inner">
-          <span className="search-hero-eyebrow">LE BON EMPLOI. AU BON MOMENT.</span>
+          <span className="search-hero-eyebrow">{content.heroEyebrow}</span>
           <h1 id="job-search-title">
             <span>{jobCount === null ? 'Des' : new Intl.NumberFormat('fr-FR').format(jobCount)} offres d’emploi</span>
-            en Guinée et en<br className="search-hero-break" /> Afrique de l’Ouest
+            {content.heroRegion}
           </h1>
-          <p>Votre job de rêve vous attend… trouvez l’opportunité qui vous ressemble !</p>
+          <p>{content.heroSubtitle}</p>
           <form className="hero-search-bar" onSubmit={search} role="search" aria-label="Rechercher une offre d’emploi">
             <label className="hero-search-field">
               <Icon name="search" size={26} />
@@ -187,7 +186,7 @@ export default function Landing() {
       <section className="recruiters-strip" aria-labelledby="recruiters-title">
         <div className="container">
           <h2 id="recruiters-title">Ils recrutent sur Job by <span>blaise</span></h2>
-          <p className="recruiters-caption">Des entreprises d’ici. Des opportunités pour vous.</p>
+          <p className="recruiters-caption">{content.recruitersCaption}</p>
           <div className="recruiters-rail" tabIndex={0} role="region" aria-label="Entreprises qui recrutent, défilement horizontal">
             {companies.map((c) => (
               <Link key={c.id} to={`/entreprises/${c.id}`} className="recruiter-tile" style={{ '--company-color': c.color }}>
@@ -228,14 +227,10 @@ export default function Landing() {
           <div className="split-visual reveal"><CvIllustration /></div>
           <div className="split-copy reveal d1">
             <span className="kicker">CV</span>
-            <h2>Votre CV moderne en 3 clics</h2>
-            <p>
-              Votre CV est votre passeport pour l'emploi. Découvrez nos rubriques modernes,
-              professionnelles et optimisées pour capter l'attention des recruteurs dès la
-              première seconde.
-            </p>
-            <p className="split-strong">Faites de votre CV un véritable passeport pour l'emploi.</p>
-            <Link to="/inscription" className="btn btn-primary btn-xl">Créer un CV maintenant</Link>
+            <h2>{content.cvTitle}</h2>
+            <p>{content.cvText}</p>
+            <p className="split-strong">{content.cvStrong}</p>
+            <Link to="/inscription" className="btn btn-primary btn-xl">{content.cvButton}</Link>
           </div>
         </div>
       </section>
@@ -245,12 +240,9 @@ export default function Landing() {
         <div className="container split split-reverse">
           <div className="split-copy reveal d1">
             <span className="kicker">Matching</span>
-            <h2>Trouvez l'emploi fait pour vous</h2>
-            <p>
-              Plus qu'une simple recherche, une mise en relation intelligente.
-              Indiquez simplement le poste recherché et votre ville, nous nous chargeons du reste.
-            </p>
-            <p className="muted">Découvrez immédiatement des offres adaptées à votre profil.</p>
+            <h2>{content.matchTitle}</h2>
+            <p>{content.matchText}</p>
+            <p className="muted">{content.matchHint}</p>
             <form className="split-form" onSubmit={search}>
               <span className="split-form-field">
                 <Icon name="search" size={16} />
@@ -276,11 +268,8 @@ export default function Landing() {
           <div className="section-head center reveal">
             <div>
               <span className="kicker">3 étapes</span>
-              <h2>Rejoignez l'aventure Job by blaise</h2>
-              <p className="muted">
-                Prenez le contrôle de votre avenir professionnel avec un profil qui vous met
-                réellement en avant.
-              </p>
+              <h2>{content.joinTitle}</h2>
+              <p className="muted">{content.joinText}</p>
             </div>
           </div>
           <div className="join-grid">
@@ -289,8 +278,8 @@ export default function Landing() {
                 <div className="join-step" key={s.n}>
                   <span className="join-step-num">{s.n}</span>
                   <div>
-                    <h3>{s.title}</h3>
-                    <p>{s.text}</p>
+                    <h3>{content[`step${s.n}Title`]}</h3>
+                    <p>{content[`step${s.n}Text`]}</p>
                   </div>
                 </div>
               ))}
@@ -304,8 +293,8 @@ export default function Landing() {
       {/* ============ CTA FINAL ============ */}
       <section className="section final-cta">
         <div className="container final-cta-inner reveal">
-          <h2>Votre prochain emploi n'attend que vous</h2>
-          <p>Rejoignez les candidats qui reçoivent chaque matin les offres faites pour eux.</p>
+          <h2>{content.finalTitle}</h2>
+          <p>{content.finalText}</p>
           <div className="final-cta-actions">
             <Link to="/inscription" className="btn btn-white btn-xl">Créer mon compte</Link>
             <Link to="/jobs" className="btn btn-ghost-light btn-xl">Trouver un job →</Link>
@@ -322,8 +311,8 @@ export default function Landing() {
         <div className="container footer-inner">
           <div>
             <Logo />
-            <p className="footer-tag">Le bon emploi. Au bon moment.</p>
-            <p className="footer-muted">Plateforme d'emploi — Guinée & Afrique de l'Ouest</p>
+            <p className="footer-tag">{content.footerTag}</p>
+            <p className="footer-muted">{content.footerDescription}</p>
           </div>
           <div className="footer-cols">
             <div>
@@ -341,14 +330,14 @@ export default function Landing() {
             <div>
               <b>Contact</b>
               <span>www.jobbyblaise.com</span>
-              <span>Conakry, Guinée</span>
-              <span>contact@jobbyblaise.com</span>
+              <span>{content.contactLocation}</span>
+              <span>{content.contactEmail}</span>
             </div>
           </div>
         </div>
         <div className="container footer-bottom">
           <span>© 2026 Job by blaise — Tous droits réservés.</span>
-          <span>Fait avec ❤ en Guinée 🇬🇳</span>
+          <span>Fait avec ❤ en Guinée 🇬🇳 · <Link to="/admin">Administration</Link></span>
         </div>
       </footer>
     </div>

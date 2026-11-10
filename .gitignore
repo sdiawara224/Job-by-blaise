@@ -8,3 +8,6 @@ image-search/
 .env
 
 .cache/
+
+.env.*
+!.env.example

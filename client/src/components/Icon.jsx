@@ -1,4 +1,14 @@
 export const ICONS = {
+  layout: 'M3 4h18v16H3V4Zm0 5h18M9 9v11',
+  settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Z',
+  lock: 'M6 10h12v11H6V10Zm3 0V6a3 3 0 0 1 6 0v4m-3 4v3',
+  external: 'M14 3h7v7m0-7L10 14m0-10H4v16h16v-6',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  refresh: 'M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6m-5 4a8 8 0 0 0 14 5l3-3m0 6v-6h-6',
+  edit: 'm15 4 5 5-11 11H4v-5L15 4Zm-2 2 5 5',
+  eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm7 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z',
+  trash: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7',
+
   calendar: 'M5 5h14v15H5V5Zm3-2v4m8-4v4M5 10h14m-11 4h2m4 0h2m-8 3h2',
   team: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-6 9v-2a6 6 0 0 1 12 0v2H3Zm13-9a3 3 0 0 0 0-6m2 9a5 5 0 0 1 3 4v2h-3',
   home: 'M3 11.5 12 4l9 7.5M5.5 10v9.5h5V15h3v4.5h5V10',

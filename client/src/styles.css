@@ -1070,6 +1070,8 @@ h3 { font-size: 1.1rem; font-weight: 700; }
 .art-li { font-size: 0.98rem; line-height: 1.7; padding-left: 18px; position: relative; margin-bottom: 6px; }
 .art-li::before { content: '•'; color: var(--blue); position: absolute; left: 2px; font-weight: 800; }
 .art-li.dash::before { content: '–'; }
+.art-li.numbered { padding-left:0; }
+.art-li.numbered::before { content:none; }
 .art-gap { height: 10px; }
 .article-cta {
   margin-top: 30px; background: var(--soft); border: 1px solid var(--line);

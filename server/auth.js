@@ -51,3 +51,11 @@ export function getUserFromRequest(req) {
   const payload = readToken(token);
   return payload ? payload.uid : null;
 }
+
+// Aucun rôle fourni par le navigateur ne fait autorité. L'accès est révocable
+// par configuration serveur et reste fermé avec le secret de développement.
+export function isAdminUser(user) {
+  if (!user || !process.env.JBB_SECRET || process.env.JBB_SECRET.length < 32) return false;
+  const emails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return emails.includes(String(user.email || '').trim().toLowerCase());
+}

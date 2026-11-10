@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import { useAuth } from '../auth.jsx';
 
-export default function Login() {
+export default function Login({ adminMode = false }) {
   const { login } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -16,8 +16,12 @@ export default function Login() {
     setBusy(true);
     setErr('');
     try {
-      await login(form.email, form.password);
-      nav('/app', { replace: true });
+      const signedIn = await login(form.email, form.password);
+      if (adminMode && !signedIn.isAdmin) {
+        setErr('Ce compte ne possède pas de droits d’administration.');
+        return;
+      }
+      nav(adminMode || signedIn.isAdmin ? '/admin' : '/app', { replace: true });
     } catch (ex) {
       setErr(ex.message);
     } finally {
@@ -29,31 +33,31 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card card">
         <Logo />
-        <h1>Bon retour parmi nous 👋</h1>
-        <p className="muted">Connecte-toi pour retrouver tes offres, candidatures et alertes SMS.</p>
+        <h1>{adminMode ? 'Votre espace de pilotage' : 'Bon retour parmi nous 👋'}</h1>
+        <p className="muted">{adminMode ? "Connectez-vous avec votre compte administrateur pour gérer Job by blaise." : "Connecte-toi pour retrouver tes offres, candidatures et alertes SMS."}</p>
 
-        <form onSubmit={submit} className="form">
-          <label>E-mail</label>
+        <form onSubmit={submit} className="form" aria-busy={busy}>
+          <label htmlFor="login-email">E-mail</label>
           <input
-            type="email" required autoFocus
+            id="login-email" type="email" required autoFocus autoComplete="username"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="toi@exemple.com"
           />
-          <label>Mot de passe</label>
+          <label htmlFor="login-password">Mot de passe</label>
           <input
-            type="password" required
+            id="login-password" type="password" required autoComplete="current-password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="••••••••"
           />
-          {err && <div className="form-error">{err}</div>}
+          {err && <div className="form-error" role="alert">{err}</div>}
           <button className="btn btn-primary btn-block btn-lg" disabled={busy}>
             {busy ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
 
-        <div className="demo-box">
+        {!adminMode && <div className="demo-box">
           <b>Compte de démonstration</b>
           <code>mamadou@jobbyblaise.com</code>
           <code>demo1234</code>
@@ -63,12 +67,12 @@ export default function Login() {
           >
             Pré-remplir →
           </button>
-        </div>
+        </div>}
 
         <p className="auth-switch">
-          Pas encore de compte ? <Link to="/inscription">Créer un compte gratuitement</Link>
+          {adminMode ? <Link to="/">← Retour au site public</Link> : <>Pas encore de compte ? <Link to="/inscription">Créer un compte gratuitement</Link></>}
         </p>
-        <Link to="/" className="link-btn center">← Retour à l’accueil</Link>
+        {!adminMode && <Link to="/" className="link-btn center">← Retour à l’accueil</Link>}
         {loc.state?.from && <p className="muted small center">Connecte-toi pour continuer.</p>}
       </div>
     </div>

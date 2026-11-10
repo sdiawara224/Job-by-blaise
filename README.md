@@ -119,3 +119,9 @@ npm test            # régressions : dates SQLite/Postgres, landing, recherche, 
 ## 📄 Licence
 
 MIT — © 2026 Job by blaise (www.jobbyblaise.com)
+
+## Espace d'administration
+
+Back-office disponible sur `/admin` (connexion `/admin/connexion`) : offres, entreprises, conseils, profils, candidatures, préférences d'alertes, journal SMS et textes de l'accueil. Les droits sont vérifiés côté serveur et restent fermés sans `ADMIN_EMAILS` et `JBB_SECRET` robuste.
+
+Voir [l'audit fonctionnel, le provisionnement et le guide de déploiement](docs/ADMINISTRATION.md). Pour une base Supabase existante, appliquer la migration additive `supabase/admin-content.sql` avant de publier ce code. Aucun déploiement ni changement des secrets de production n'est effectué automatiquement.

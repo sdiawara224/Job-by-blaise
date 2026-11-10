@@ -201,3 +201,11 @@ $fn$;
 -- Privileges : service only (le PUBLIC a EXECUTE par défaut → révocation obligatoire)
 revoke execute on function public.app_exec (text, text, jsonb) from public, anon, authenticated;
 grant  execute on function public.app_exec (text, text, jsonb) to postgres, service_role;
+
+-- Contenu éditorial du back-office (installation neuve ou mise à jour idempotente).
+create table if not exists jobbyblaise.site_content (
+  id integer primary key,
+  data text not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table jobbyblaise.site_content enable row level security;

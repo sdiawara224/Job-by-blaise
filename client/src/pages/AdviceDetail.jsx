@@ -3,20 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import Icon from '../components/Icon.jsx';
 import { api } from '../api.js';
-
-// Petit rendu markdown léger : **gras**, listes, paragraphes
-function renderContent(text) {
-  const lines = String(text || '').split('\n');
-  return lines.map((line, i) => {
-    const html = line
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    if (!html.trim()) return <div key={i} className="art-gap" />;
-    if (/^\d+\.\s/.test(html)) return <p key={i} className="art-li" dangerouslySetInnerHTML={{ __html: html }} />;
-    if (html.startsWith('- ')) return <p key={i} className="art-li dash" dangerouslySetInnerHTML={{ __html: html }} />;
-    return <p key={i} className="art-p" dangerouslySetInnerHTML={{ __html: html }} />;
-  });
-}
+import ArticleBody from '../components/ArticleBody.jsx';
 
 export default function AdviceDetail({ inApp = false }) {
   const { id } = useParams();
@@ -51,7 +38,7 @@ export default function AdviceDetail({ inApp = false }) {
             <span>· L'équipe Job by blaise</span>
           </div>
           <div className="article-body">
-            {renderContent(art.content)}
+            <ArticleBody text={art.content} />
           </div>
           <div className="article-cta">
             <div>

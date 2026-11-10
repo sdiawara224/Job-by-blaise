@@ -42,6 +42,7 @@ export default function AppLayout() {
           ))}
         </nav>
         <div className="sidebar-foot">
+          {user?.isAdmin && <Link to="/admin" className="sidebar-link"><Icon name="settings" size={18} /><span>Administration</span></Link>}
           <Link to="/jobs" className="sidebar-link subtle"><Icon name="search" size={18} /><span>Voir le site public</span></Link>
           <button className="sidebar-link subtle" onClick={() => { logout(); nav('/'); }}>
             <Icon name="logout" size={18} /><span>Déconnexion</span>

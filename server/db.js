@@ -3,6 +3,7 @@
 //  • supabase : Postgres managé via la RPC sécurisée app_exec (usage Vercel)
 // API unifiée : db.prepare(sql).get/all/run(...) → ASYNCHRONES (await partout).
 import { DatabaseSync } from 'node:sqlite';
+import { isAdminUser } from './auth.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,14 +19,21 @@ export const backendName = () => backend;
 
 // ---------------- SQLite (local / repli) ----------------
 // Vercel : FS en lecture seule sauf /tmp → base éphémère ré-seedée à chaque cold start
-const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'database');
+const DB_DIR = process.env.JBB_DB_DIR || (process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'database'));
 const DB_PATH = path.join(DB_DIR, 'jobbyblaise.db');
 fs.mkdirSync(DB_DIR, { recursive: true });
 
 const sqlite = new DatabaseSync(DB_PATH);
+sqlite.exec('PRAGMA foreign_keys = ON;');
 try { sqlite.exec('PRAGMA journal_mode = WAL;'); } catch { /* ignore */ }
 
 const SQLITE_DDL = `
+  CREATE TABLE IF NOT EXISTS site_content (
+    id INTEGER PRIMARY KEY,
+    data TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE NOT NULL,
@@ -254,6 +262,7 @@ export function publicUser(row) {
   return {
     id: row.id,
     email: row.email,
+    isAdmin: isAdminUser(row),
     fullName: row.full_name,
     phone: row.phone,
     city: row.city,

@@ -16,6 +16,7 @@ import Profile from './pages/Profile.jsx';
 import Applications from './pages/Applications.jsx';
 import Alerts from './pages/Alerts.jsx';
 import AppJobs from './pages/AppJobs.jsx';
+import Admin from './pages/Admin.jsx';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -27,7 +28,7 @@ function Protected({ children }) {
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-loader"><span className="dots" /></div>;
-  if (user) return <Navigate to="/app" replace />;
+  if (user) return <Navigate to={user.isAdmin ? "/admin" : "/app"} replace />;
   return children;
 }
 
@@ -89,6 +90,11 @@ export default function App() {
       <Route path="/conseils/:id" element={<AdviceDetail />} />
       <Route path="/connexion" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/inscription" element={<GuestOnly><Register /></GuestOnly>} />
+
+      {/* ---- Administration : contrôle supplémentaire côté API ---- */}
+      <Route path="/admin/connexion" element={<Login adminMode />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/:section" element={<Admin />} />
 
       {/* ---- Espace candidat ---- */}
       <Route path="/app" element={<Protected><AppLayout /></Protected>}>
