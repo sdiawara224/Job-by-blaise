@@ -163,8 +163,15 @@ begin
 
   elsif p_kind = 'run' then
     if sql_out ~* '^\s*insert' then
-      execute sql_out || ' RETURNING id' into v_id;
-      get diagnostics v_n = row_count;
+      begin
+        -- lastInsertRowid : renvoyé via RETURNING id (tables sans colonne id → repli)
+        execute sql_out || ' RETURNING id' into v_id;
+        get diagnostics v_n = row_count;
+      exception when undefined_column then
+        execute sql_out;
+        get diagnostics v_n = row_count;
+        v_id := 0;
+      end;
       return jsonb_build_object('changes', v_n, 'lastInsertRowid', coalesce(v_id, 0));
     end if;
     execute sql_out;
