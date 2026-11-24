@@ -9,6 +9,7 @@ import { hashPassword, verifyPassword, createToken, getUserFromRequest } from '.
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
 import { createAdminRouter, readSiteContent } from './admin.js';
+import { isRecord, validateRegistration, validateProfile, validateAlerts } from './candidateValidation.js';
 
 await initSchema();
 await seed(); // auto-seed si la base est vide
@@ -69,14 +70,11 @@ router.get('/health', (req, res) => {
 
 // ================= AUTH =================
 router.post('/auth/register', wrap(async (req, res) => {
-  const { email, password, fullName, phone, city } = req.body || {};
+  const validation = validateRegistration(req.body);
+  if (validation) return res.status(400).json({ error: validation });
+  const { email, password, fullName, phone, city } = req.body;
   const reserved = String(process.env.ADMIN_EMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
-  if (reserved.includes(String(email || '').trim().toLowerCase())) return res.status(403).json({ error: 'Cette adresse est réservée. Contactez l’équipe de la plateforme.' });
-  if (!email || !password || !fullName) {
-    return res.status(400).json({ error: 'E-mail, mot de passe et nom complet sont requis.' });
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'E-mail invalide.' });
-  if (String(password).length < 6) return res.status(400).json({ error: 'Mot de passe : 6 caractères minimum.' });
+  if (reserved.includes(email.trim().toLowerCase())) return res.status(403).json({ error: 'Cette adresse est réservée. Contactez l’équipe de la plateforme.' });
   const exists = await db.prepare('SELECT id FROM users WHERE email = ?').get(String(email).trim().toLowerCase());
   if (exists) return res.status(409).json({ error: 'Un compte existe déjà avec cet e-mail.' });
 
@@ -99,7 +97,10 @@ router.post('/auth/register', wrap(async (req, res) => {
 }));
 
 router.post('/auth/login', wrap(async (req, res) => {
-  const { email, password } = req.body || {};
+  if (!isRecord(req.body) || typeof req.body.email !== 'string' || typeof req.body.password !== 'string' || req.body.email.length > 254 || req.body.password.length > 1024) {
+    return res.status(400).json({ error: 'E-mail et mot de passe doivent être des textes valides.' });
+  }
+  const { email, password } = req.body;
   const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').trim().toLowerCase());
   if (!user || !verifyPassword(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
@@ -119,6 +120,8 @@ router.get('/profile', requireAuth, wrap(async (req, res) => {
 
 router.put('/profile', requireAuth, wrap(async (req, res) => {
   const b = req.body || {};
+  const validation = validateProfile(b);
+  if (validation) return res.status(400).json({ error: validation });
   const u = req.user;
   const fields = {
     full_name: b.fullName ?? u.full_name,
@@ -302,6 +305,8 @@ router.get('/alerts', requireAuth, wrap(async (req, res) => {
 
 router.put('/alerts', requireAuth, wrap(async (req, res) => {
   const b = req.body || {};
+  const validation = validateAlerts(b);
+  if (validation) return res.status(400).json({ error: validation });
   const u = req.user;
   const current = await loadAlerts(u.id);
   await db.prepare(`
@@ -313,12 +318,12 @@ router.put('/alerts', requireAuth, wrap(async (req, res) => {
       updated_at=excluded.updated_at
   `).run(
     u.id,
-    b.enabled === false ? 0 : 1,
-    String(b.phone ?? current.phone ?? ''),
-    /^\d{2}:\d{2}$/.test(b.sendTime || '') ? b.sendTime : '07:00',
-    JSON.stringify(Array.isArray(b.keywords) ? b.keywords : []),
-    JSON.stringify(Array.isArray(b.cities) ? b.cities : []),
-    JSON.stringify(Array.isArray(b.contracts) ? b.contracts : [])
+    b.enabled === undefined ? Number(current.enabled) : (b.enabled ? 1 : 0),
+    b.phone ?? current.phone ?? '',
+    b.sendTime ?? current.send_time ?? '07:00',
+    JSON.stringify(b.keywords ?? jget(current.keywords, [])),
+    JSON.stringify(b.cities ?? jget(current.cities, [])),
+    JSON.stringify(b.contracts ?? jget(current.contracts, []))
   );
   res.json({ ok: true });
 }));

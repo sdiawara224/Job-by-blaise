@@ -5,6 +5,8 @@ import Icon from '../components/Icon.jsx';
 import MatchRing from '../components/MatchRing.jsx';
 import { api, fmtSalary, fmtDate } from '../api.js';
 import { useAuth } from '../auth.jsx';
+import useApiResource from '../hooks/useApiResource.js';
+import ResourceError from '../components/ResourceError.jsx';
 
 function ApplyCard({ job, applied, onApplied }) {
   const { user } = useAuth();
@@ -75,22 +77,14 @@ function ApplyCard({ job, applied, onApplied }) {
 
 export default function JobDetail({ inApp = false }) {
   const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState('');
   const { user } = useAuth();
-
-  const load = () => {
-    api(`/jobs/${id}`)
-      .then(setData)
-      .catch((e) => setErr(e.message));
-  };
-  useEffect(load, [id, user]);
+  const { data, error: err, reload: load } = useApiResource(`/jobs/${id}`, user);
 
   useEffect(() => {
     if (data?.job) document.title = `${data.job.title} | Job by blaise`;
   }, [data]);
 
-  if (err) return <div className="page-loader">{err}</div>;
+  if (err) return <ResourceError message={err} retry={load} backTo={inApp ? '/app/offres' : '/jobs'} backLabel="← Retour aux offres" />;
   if (!data || !data.job) return <div className="page-loader">Chargement de l’offre…</div>;
 
   const { job, applied } = data;

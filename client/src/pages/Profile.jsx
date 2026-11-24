@@ -21,6 +21,7 @@ export default function Profile() {
   const [skillInput, setSkillInput] = useState('');
 
   const load = () => {
+    setErr('');
     api('/profile').then((d) => {
       setProfile(d.profile);
       setCompletion(d.completion);
@@ -29,6 +30,7 @@ export default function Profile() {
   };
   useEffect(load, []);
 
+  if (!profile && err) return <div className="page-loader"><div role="alert"><p>{err}</p><button className="btn btn-outline" onClick={load}>Réessayer</button></div></div>;
   if (!profile) return <div className="page-loader">Chargement du profil…</div>;
 
   const set = (k) => (e) => setProfile({ ...profile, [k]: e.target.value });

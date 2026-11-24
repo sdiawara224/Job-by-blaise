@@ -1,27 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import Icon from '../components/Icon.jsx';
-import { api } from '../api.js';
+import useApiResource from '../hooks/useApiResource.js';
+import ResourceError from '../components/ResourceError.jsx';
 import ArticleBody from '../components/ArticleBody.jsx';
 
 export default function AdviceDetail({ inApp = false }) {
   const { id } = useParams();
-  const [art, setArt] = useState(null);
-  const [err, setErr] = useState('');
-
-  useEffect(() => {
-    api(`/advice/${id}`).then((d) => setArt(d.article)).catch((e) => setErr(e.message));
-  }, [id]);
+  const { data, error: err, reload } = useApiResource(`/advice/${id}`);
+  const art = data?.article;
+  const back = inApp ? '/app/conseils' : '/conseils';
 
   useEffect(() => {
     if (art) document.title = `${art.title} | Job by blaise`;
   }, [art]);
 
-  if (err) return <div className="page-loader">{err}</div>;
+  if (err) return <ResourceError message={err} retry={reload} backTo={back} backLabel="← Tous les conseils" />;
   if (!art) return <div className="page-loader">Chargement…</div>;
-
-  const back = inApp ? '/app/conseils' : '/conseils';
 
   return (
     <div className="page">

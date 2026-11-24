@@ -1,17 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import JobCard from './JobCard.jsx';
 import Icon from './Icon.jsx';
-import { api } from '../api.js';
+import useApiResource from '../hooks/useApiResource.js';
+import ResourceError from './ResourceError.jsx';
 import { useAuth } from '../auth.jsx';
 
 export default function JobsBoard() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
-  const [meta, setMeta] = useState(null);
-  const [jobs, setJobs] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { data: meta, error: metaError, reload: reloadMeta } = useApiResource('/jobs/meta');
 
   const search = params.get('search') || '';
   const city = params.get('city') || '';
@@ -19,25 +16,15 @@ export default function JobsBoard() {
   const domain = params.get('domain') || '';
   const sort = params.get('sort') || 'recent';
 
-  useEffect(() => {
-    api('/jobs/meta').then(setMeta).catch(() => {});
-  }, []);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    const qs = new URLSearchParams();
-    if (search) qs.set('search', search);
-    if (city) qs.set('city', city);
-    if (contract) qs.set('contract', contract);
-    if (domain) qs.set('domain', domain);
-    if (sort) qs.set('sort', sort);
-    api(`/jobs?${qs}`)
-      .then((d) => { setJobs(d.jobs); setTotal(d.total); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [search, city, contract, domain, sort]);
-
-  useEffect(() => { load(); }, [load]);
+  const qs = new URLSearchParams();
+  if (search) qs.set('search', search);
+  if (city) qs.set('city', city);
+  if (contract) qs.set('contract', contract);
+  if (domain) qs.set('domain', domain);
+  if (sort) qs.set('sort', sort);
+  const { data, error, loading, reload } = useApiResource(`/jobs?${qs}`, user);
+  const jobs = data?.jobs || [];
+  const total = data?.total || 0;
 
   const setParam = (key, value) => {
     const next = new URLSearchParams(params);
@@ -77,8 +64,10 @@ export default function JobsBoard() {
         </div>
       </div>
 
+      {metaError && <div className="form-error" role="status">Les filtres sont temporairement indisponibles. <button className="link-btn" onClick={reloadMeta}>Recharger les filtres</button></div>}
+
       <div className="jobsboard-meta">
-        <span><b>{total}</b> offre{total > 1 ? 's' : ''} trouvée{total > 1 ? 's' : ''}</span>
+        <span aria-live="polite">{loading ? 'Recherche en cours…' : error ? 'Recherche indisponible' : <><b>{total}</b> offre{total > 1 ? 's' : ''} trouvée{total > 1 ? 's' : ''}</>}</span>
         {user && <span className="hint"><Icon name="star" size={14} /> Le % de match est calculé pour ton profil</span>}
         {(search || city || contract || domain) && (
           <button
@@ -92,6 +81,8 @@ export default function JobsBoard() {
 
       {loading ? (
         <div className="empty">Chargement des offres…</div>
+      ) : error ? (
+        <ResourceError message={error} retry={reload} />
       ) : jobs.length ? (
         <div className="jobs-grid reveal stagger">
           {jobs.map((j) => <JobCard key={j.id} job={j} />)}

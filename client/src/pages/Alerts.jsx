@@ -17,6 +17,7 @@ export default function Alerts() {
   const [keyword, setKeyword] = useState('');
 
   const load = () => {
+    if (!settings) setErr('');
     api('/alerts').then((d) => { setSettings(d.settings); setMessages(d.messages); }).catch((e) => setErr(e.message));
     api('/jobs/meta').then(setMeta).catch(() => {});
   };
@@ -29,6 +30,7 @@ export default function Alerts() {
     }
   }, [messages]);
 
+  if (!settings && err) return <div className="page-loader"><div role="alert"><p>{err}</p><button className="btn btn-outline" onClick={load}>Réessayer</button></div></div>;
   if (!settings) return <div className="page-loader">Chargement des alertes…</div>;
 
   const save = async (patch) => {

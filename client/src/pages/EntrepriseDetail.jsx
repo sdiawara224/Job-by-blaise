@@ -1,26 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import JobCard from '../components/JobCard.jsx';
 import { Stars } from '../components/CompanyCard.jsx';
 import Icon from '../components/Icon.jsx';
-import { api } from '../api.js';
+import useApiResource from '../hooks/useApiResource.js';
+import ResourceError from '../components/ResourceError.jsx';
 
 export default function EntrepriseDetail() {
   const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [err, setErr] = useState('');
+  const { data, error: err, reload } = useApiResource(`/companies/${id}`);
 
   useEffect(() => {
-    api(`/companies/${id}`)
-      .then((d) => {
-        setData(d);
-        if (d?.company) document.title = `${d.company.name} — offres d'emploi | Job by blaise`;
-      })
-      .catch((e) => setErr(e.message));
-  }, [id]);
+    if (data?.company) document.title = `${data.company.name} — offres d'emploi | Job by blaise`;
+  }, [data]);
 
-  if (err) return <div className="page-loader">{err}</div>;
+  if (err) return <ResourceError message={err} retry={reload} backTo="/entreprises" backLabel="← Toutes les entreprises" />;
   if (!data) return <div className="page-loader">Chargement de l'entreprise…</div>;
 
   const { company, jobs } = data;

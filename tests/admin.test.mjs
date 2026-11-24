@@ -171,3 +171,53 @@ test('accès temporaire : expiration serveur, date invalide refusée et échéan
     for (const key of keys) if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key];
   }
 });
+
+test('inscription : types invalides refusés et adresse normalisée avant validation', async () => {
+  for (const patch of [{ fullName: 42 }, { fullName: '   ' }, { password: { value: 'abcdef' } }, { email: ['candidate@example.com'] }]) {
+    const result = await request('/auth/register', { method: 'POST', body: { email: 'validation@example.com', fullName: 'Validation', password: 'test123456', ...patch } });
+    assert.equal(result.status, 400, JSON.stringify(patch));
+  }
+  const registered = await request('/auth/register', { method: 'POST', body: { email: '  NORMALIZED@example.com  ', fullName: '  Test Normalisation  ', password: 'test123456' } });
+  assert.equal(registered.status, 201);
+  assert.equal(registered.data.user.email, 'normalized@example.com');
+  assert.equal(registered.data.user.fullName, 'Test Normalisation');
+});
+
+test('connexion : un mot de passe non textuel ne provoque pas d’erreur serveur', async () => {
+  const result = await request('/auth/login', { method: 'POST', body: { email: 'mamadou@jobbyblaise.com', password: { value: 'demo1234' } } });
+  assert.equal(result.status, 400);
+});
+
+test('profil : rejeter les valeurs qui cassent le matching sans modifier le profil', async () => {
+  const before = (await request('/profile', { token: candidate.token })).data.profile;
+  try {
+    for (const body of [{ skills: [42] }, { preferredCities: [{}] }, { city: {} }, { fullName: '   ' }, { experienceYears: -1 }, { cv: { experiences: [null] } }]) {
+      const result = await request('/profile', { token: candidate.token, method: 'PUT', body });
+      assert.equal(result.status, 400, JSON.stringify(body));
+    }
+    assert.deepEqual((await request('/profile', { token: candidate.token })).data.profile, before);
+    assert.equal((await request('/jobs/recommended', { token: candidate.token })).status, 200);
+  } finally {
+    await request('/profile', { token: candidate.token, method: 'PUT', body: before });
+  }
+});
+
+test('alertes : heure réelle validée et mise à jour partielle sans effacer les préférences', async () => {
+  const before = (await request('/alerts', { token: candidate.token })).data.settings;
+  try {
+    for (const body of [{ sendTime: '99:99' }, { sendTime: '12:60' }, { keywords: [null] }, { enabled: 'false' }]) {
+      const result = await request('/alerts', { token: candidate.token, method: 'PUT', body });
+      assert.equal(result.status, 400, JSON.stringify(body));
+    }
+    assert.equal((await request('/alerts', { token: candidate.token, method: 'PUT', body: { ...before, enabled: false, sendTime: '08:30', keywords: ['assistant'], cities: ['Conakry'], contracts: ['CDD'] } })).status, 200);
+    assert.equal((await request('/alerts', { token: candidate.token, method: 'PUT', body: { phone: '+224 600 000 000' } })).status, 200);
+    const settings = (await request('/alerts', { token: candidate.token })).data.settings;
+    assert.equal(settings.enabled, false);
+    assert.equal(settings.sendTime, '08:30');
+    assert.deepEqual(settings.keywords, ['assistant']);
+    assert.deepEqual(settings.cities, ['Conakry']);
+    assert.deepEqual(settings.contracts, ['CDD']);
+  } finally {
+    await request('/alerts', { token: candidate.token, method: 'PUT', body: before });
+  }
+});
