@@ -288,3 +288,13 @@ test('équipe : administration sécurisée, brouillons privés, ordre et changem
   await adminReq('/team', { method: 'PUT', body: { members: [] } });
   assert.deepEqual((await request('/team')).data.members, []);
 });
+
+test('connexion administration dédiée : valide les droits avant de délivrer un jeton', async () => {
+  const denied = await request('/auth/admin/login', { method: 'POST', body: { email: 'mamadou@jobbyblaise.com', password: 'demo1234' } });
+  assert.equal(denied.status, 403); assert.equal(denied.data.token, undefined);
+  const invalid = await request('/auth/admin/login', { method: 'POST', body: { email: 'admin@example.com', password: 'incorrect' } });
+  assert.equal(invalid.status, 401); assert.equal(invalid.data.token, undefined);
+  const allowed = await request('/auth/admin/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } });
+  assert.equal(allowed.status, 200); assert.equal(allowed.data.user.isAdmin, true); assert.ok(allowed.data.token);
+  assert.equal((await request('/auth/admin/login', { method: 'POST', body: { email: [], password: null } })).status, 400);
+});

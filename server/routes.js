@@ -5,7 +5,7 @@ import {
   db, initSchema, backendName, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
   CONTRACT_TYPES, EDUCATION_ORDER,
 } from './db.js';
-import { hashPassword, verifyPassword, createToken, getUserFromRequest } from './auth.js';
+import { hashPassword, verifyPassword, createToken, getUserFromRequest, isAdminUser } from './auth.js';
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
 import { createAdminRouter, readSiteContent, readTeam } from './admin.js';
@@ -101,7 +101,7 @@ router.post('/auth/register', wrap(async (req, res) => {
   res.status(201).json({ token: createToken(uid), user: publicUser(await loadUser(uid)) });
 }));
 
-router.post('/auth/login', wrap(async (req, res) => {
+const signIn = (adminOnly = false) => wrap(async (req, res) => {
   if (!isRecord(req.body) || typeof req.body.email !== 'string' || typeof req.body.password !== 'string' || req.body.email.length > 254 || req.body.password.length > 1024) {
     return res.status(400).json({ error: 'E-mail et mot de passe doivent être des textes valides.' });
   }
@@ -110,8 +110,11 @@ router.post('/auth/login', wrap(async (req, res) => {
   if (!user || !verifyPassword(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
   }
+  if (adminOnly && !isAdminUser(user)) return res.status(403).json({ error: 'Ce compte ne possède pas de droits d’administration.' });
   res.json({ token: createToken(user.id), user: publicUser(user) });
-}));
+});
+router.post('/auth/login', signIn());
+router.post('/auth/admin/login', signIn(true));
 
 router.get('/auth/me', requireAuth, wrap(async (req, res) => {
   res.json({ user: publicUser(req.user) });

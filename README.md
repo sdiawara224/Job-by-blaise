@@ -150,4 +150,6 @@ MIT — © 2026 Job by blaise (www.jobbyblaise.com)
 
 Back-office disponible sur `/admin` (connexion `/admin/connexion`) : offres, entreprises, conseils, profils, candidatures, préférences d'alertes, journal SMS et textes de l'accueil. Les droits sont vérifiés côté serveur et restent fermés sans `ADMIN_EMAILS` et `JBB_SECRET` robuste.
 
+Les boutons **Connexion** (`/connexion`) et **Créer un compte** (`/inscription`) du menu public concernent les visiteurs et abonnés : leur destination est toujours l’espace candidat `/app`, même si le compte dispose aussi de droits administrateur. Aucun identifiant de démonstration n’est affiché sur le formulaire public. L’entrée administrative utilise `/auth/admin/login`, qui vérifie les droits avant de délivrer un jeton ; un refus ne remplace pas la session courante. Les entrées et redirections sont distinctes, mais le compte et le stockage de session restent partagés : ce n’est pas une isolation de deux sessions simultanées. Les mots de passe existants ne sont pas modifiés.
+
 Voir [l'audit fonctionnel, le provisionnement et le guide de déploiement](docs/ADMINISTRATION.md). Pour une base Supabase existante, appliquer la migration additive `supabase/admin-content.sql` avant de publier ce code. Aucun déploiement ni changement des secrets de production n'est effectué automatiquement.

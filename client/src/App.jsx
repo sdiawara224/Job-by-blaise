@@ -29,7 +29,7 @@ function Protected({ children }) {
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-loader"><span className="dots" /></div>;
-  if (user) return <Navigate to={user.isAdmin ? "/admin" : "/app"} replace />;
+  if (user) return <Navigate to="/app" replace />;
   return children;
 }
 

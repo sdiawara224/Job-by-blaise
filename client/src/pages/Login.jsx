@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import { useAuth } from '../auth.jsx';
@@ -10,18 +10,17 @@ export default function Login({ adminMode = false }) {
   const [form, setForm] = useState({ email: '', password: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    document.title = `${adminMode ? 'Connexion administration' : 'Connexion candidat'} | Job by blaise`;
+  }, [adminMode]);
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     setErr('');
     try {
-      const signedIn = await login(form.email, form.password);
-      if (adminMode && !signedIn.isAdmin) {
-        setErr('Ce compte ne possède pas de droits d’administration.');
-        return;
-      }
-      nav(adminMode || signedIn.isAdmin ? '/admin' : '/app', { replace: true });
+      await login(form.email, form.password, { adminMode });
+      nav(adminMode ? '/admin' : '/app', { replace: true });
     } catch (ex) {
       setErr(ex.message);
     } finally {
@@ -33,6 +32,7 @@ export default function Login({ adminMode = false }) {
     <div className="auth-page">
       <div className="auth-card card">
         <Logo />
+        <span className="kicker">{adminMode ? 'Administration' : 'Espace candidat · Visiteurs et abonnés'}</span>
         <h1>{adminMode ? 'Votre espace de pilotage' : 'Bon retour parmi nous 👋'}</h1>
         <p className="muted">{adminMode ? "Connectez-vous avec votre compte administrateur pour gérer Job by blaise." : "Connecte-toi pour retrouver tes offres, candidatures et alertes SMS."}</p>
 
@@ -57,17 +57,6 @@ export default function Login({ adminMode = false }) {
           </button>
         </form>
 
-        {!adminMode && <div className="demo-box">
-          <b>Compte de démonstration</b>
-          <code>mamadou@jobbyblaise.com</code>
-          <code>demo1234</code>
-          <button
-            type="button" className="link-btn"
-            onClick={() => setForm({ email: 'mamadou@jobbyblaise.com', password: 'demo1234' })}
-          >
-            Pré-remplir →
-          </button>
-        </div>}
 
         <p className="auth-switch">
           {adminMode ? <Link to="/">← Retour au site public</Link> : <>Pas encore de compte ? <Link to="/inscription">Créer un compte gratuitement</Link></>}
