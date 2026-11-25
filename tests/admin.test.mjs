@@ -320,3 +320,31 @@ test('compte super administrateur : portail candidat et API candidat interdits',
   assert.equal((await adminReq(`/users/${id}`, { method: 'PUT', body: { role: 'super_admin' } })).status, 400);
   assert.equal((await adminReq('/users?q=admin%40example.com')).data.total, 1);
 });
+
+
+test('utilisateurs : catégories filtrées avant total, recherche et pagination', async () => {
+  const admins = await adminReq('/users?role=super_admin');
+  assert.equal(admins.status, 200);
+  assert.equal(admins.data.total, 1);
+  assert.deepEqual(admins.data.items.map(u => u.email), ['admin@example.com']);
+  assert.equal((await adminReq('/users?role=super_admin&q=mamadou')).data.total, 0);
+  assert.equal((await adminReq('/users?role=client&q=admin%40example.com')).data.total, 0);
+  assert.equal((await adminReq('/users?role=super_admin%27%3B--')).status, 400);
+  assert.equal((await request('/admin/users?role=super_admin', { token: candidate.token })).status, 403);
+  // Plus d’une page de clients : le compte admin ne doit jamais se glisser dans une page.
+  for (let i = 0; i < 23; i++) {
+    assert.equal((await request('/auth/register', { method: 'POST', body: { email: `pagination-${i}@example.com`, password: 'test-pagination-123', fullName: `Abonné ${i}` } })).status, 201);
+  }
+  const first = (await adminReq('/users?role=client&sort=oldest')).data;
+  const second = (await adminReq('/users?role=client&sort=oldest&page=2')).data;
+  assert.equal(first.items.length, 20);
+  assert.equal(first.total, second.total);
+  assert.equal(first.items.length + second.items.length, first.total);
+  assert.ok([...first.items, ...second.items].every(u => u.role === 'client' && !('password_hash' in u)));
+  const matching = (await adminReq('/users?role=client&q=pagination-&sort=az')).data;
+  assert.equal(matching.total, 23);
+  assert.equal(matching.items.length, 20);
+  const stillAdmins = (await adminReq('/users?role=super_admin&page=99')).data;
+  assert.equal(stillAdmins.total, 1);
+  assert.equal(stillAdmins.page, 1);
+});

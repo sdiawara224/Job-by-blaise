@@ -342,3 +342,10 @@
 .adm-team-controls > span { color: #64748b; font-size: .85rem; }
 .adm-team-preview { min-width: 0; align-self: start; }
 @media (max-width: 800px) { .adm-team-member { grid-template-columns: minmax(0, 1fr); padding: 20px; } .adm-team-preview { max-width: 360px; width: 100%; } }
+
+/* Catégories de comptes : même palette que les commandes du back-office. */
+.adm-user-tabs { display:flex; gap:6px; padding:5px; margin-bottom:22px; width:fit-content; max-width:100%; border:1px solid var(--line); border-radius:12px; background:#edf2fb; }
+.adm-user-tabs button { display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 22px; border:0; border-radius:8px; background:transparent; color:#64748b; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+.adm-user-tabs button[aria-selected=true] { background:var(--blue); color:white; box-shadow:0 3px 10px #2e6bff22; }
+.adm-user-tabs button:focus-visible { outline:3px solid #94b4ff; outline-offset:3px; }
+@media (max-width:480px) { .adm-user-tabs { width:100%; } .adm-user-tabs button { flex:1; padding:12px 10px; font-size:13px; } }

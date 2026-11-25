@@ -11,6 +11,8 @@ import RecordDialog from './admin/RecordDialog.jsx';
 import DeleteDialog from './admin/DeleteDialog.jsx';
 import './admin.css';
 
+const USER_TABS = [['super_admin', 'Administrateur'], ['client', 'Abonnés']];
+
 const date = (value) => value ? new Date(String(value).replace(' ', 'T').replace(/^(.*\d{2}:\d{2}:\d{2})$/, '$1Z')).toLocaleDateString('fr-FR') : '—';
 const initial = (s) => String(s || 'J').split(' ').filter(Boolean).slice(0, 2).map((v) => v[0]).join('').toUpperCase();
 function Badge({ children, tone = '' }) { return <span className={`adm-badge ${tone}`}><i />{children}</span>; }
@@ -41,6 +43,7 @@ export default function Admin() {
   const cfg = SECTIONS[section];
   const navigate = useNavigate();
   const location = useLocation();
+  const userCategory = section === 'users' ? (new URLSearchParams(location.search).get('role') === 'client' ? 'client' : 'super_admin') : '';
   useEffect(() => {
     if (!user?.isAdmin || !user.adminAccessExpiresAt) return;
     let timer;
@@ -54,9 +57,9 @@ export default function Admin() {
   }, [user?.isAdmin, user?.adminAccessExpiresAt]);
   const [contentDirty, setContentDirty] = useState(false);
   const [summary, setSummary] = useState(null), [items, setItems] = useState([]), [total, setTotal] = useState(0), [page, setPage] = useState(1), [q, setQ] = useState(''), [status, setStatus] = useState(''), [busy, setBusy] = useState(true), [error, setError] = useState(''), [notice, setNotice] = useState(''), [refresh, setRefresh] = useState(0), [editor, setEditor] = useState(null), [companies, setCompanies] = useState([]), [menu, setMenu] = useState(false), [pendingDelete, setPendingDelete] = useState(null), [sort, setSort] = useState('newest'), [loadedKey, setLoadedKey] = useState('');
-  const listKey = JSON.stringify([section, q, status, sort, page, refresh]);
+  const listKey = JSON.stringify([section, userCategory, q, status, sort, page, refresh]);
   const listBusy = busy || loadedKey !== listKey;
-  useEffect(() => { setQ(''); setStatus(''); setSort('newest'); setPage(1); setEditor(null); setPendingDelete(null); setMenu(false); setError(''); document.title = `${cfg?.label || 'Administration'} | Job by blaise`; }, [section]);
+  useEffect(() => { setQ(''); setStatus(''); setSort('newest'); setPage(1); setEditor(null); setPendingDelete(null); setMenu(false); setError(''); document.title = `${cfg?.label || 'Administration'} | Job by blaise`; }, [section, userCategory]);
   useEffect(() => {
     if (location.search === '?create=1' && cfg?.defaults && user?.isAdmin) {
       setEditor({ ...cfg.defaults });
@@ -69,10 +72,10 @@ export default function Admin() {
     let active = true;
     setBusy(true); setError('');
     const timer = setTimeout(() => {
-      api(`/admin/${section}?${new URLSearchParams({ q, status, sort, page })}`).then((d) => { if (active) { setItems(d.items); setTotal(d.total); if (d.page) setPage(d.page); } }).catch((e) => { if (active) setError(e.message); }).finally(() => { if (active) { setBusy(false); setLoadedKey(listKey); } });
+      api(`/admin/${section}?${new URLSearchParams({ q, status, sort, page, ...(section === 'users' ? { role: userCategory } : {}) })}`).then((d) => { if (active) { setItems(d.items); setTotal(d.total); if (d.page) setPage(d.page); } }).catch((e) => { if (active) setError(e.message); }).finally(() => { if (active) { setBusy(false); setLoadedKey(listKey); } });
     }, 200);
     return () => { active = false; clearTimeout(timer); };
-  }, [section, q, status, sort, page, refresh, user?.isAdmin]);
+  }, [section, userCategory, q, status, sort, page, refresh, user?.isAdmin]);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer); }, [notice]);
   if (loading) return <div className="page-loader">Vérification de votre accès…</div>;
   if (!user) return <Navigate to="/admin/connexion" replace />;
@@ -82,6 +85,10 @@ export default function Admin() {
   const remove = async (row) => {
     await api(`/admin/${section}/${row.id}`, { method: 'DELETE' });
     setPendingDelete(null); setNotice('Enregistrement supprimé.'); setRefresh((v) => v + 1);
+  };
+  const selectUserCategory = (role) => {
+    if (role === userCategory) return;
+    navigate({ pathname: location.pathname, search: `?role=${role}` });
   };
   const resetFilters = () => { setQ(''); setStatus(''); setSort('newest'); setPage(1); };
   return <div className="adm-shell" onClickCapture={(e) => {
@@ -102,7 +109,14 @@ export default function Admin() {
         {section === 'team' && <TeamEditor notify={setNotice} onDirtyChange={setContentDirty} />}
         {section === 'content' && <ContentEditor notify={setNotice} onDirtyChange={setContentDirty} jobCount={summary?.stats.activeJobs} />}
         {section === 'settings' && <div className="adm-settings"><section className="adm-panel"><Icon name="lock" size={26} /><h2>Accès & sécurité</h2><p>L’accès administrateur dépend de la liste <code>ADMIN_EMAILS</code> et d’un secret de signature serveur robuste (<code>JBB_SECRET</code>, au moins 32 caractères). Aucun candidat ne peut s’attribuer ces droits depuis son profil.</p><dl><dt>Compte connecté</dt><dd>{user.email}</dd><dt>Droits</dt><dd>Super administrateur · accès complet</dd></dl></section><section className="adm-panel"><Icon name="settings" size={26} /><h2>Environnement</h2><dl><dt>Base de données</dt><dd>{summary?.backend === 'supabase' ? 'Supabase · PostgreSQL' : summary?.backend === 'sqlite' ? 'SQLite · environnement local' : 'Vérification…'}</dd><dt>Contenus éditoriaux</dt><dd>Enregistrés en base de données</dd><dt>SMS</dt><dd>Génération interne · pas de confirmation opérateur</dd></dl><p>Les secrets et la connexion à la base se configurent uniquement sur le serveur, jamais dans le navigateur.</p></section></div>}
-        {cfg.columns && <section className="adm-panel adm-list-panel"><div className="adm-list-toolbar"><div className="adm-list-title"><b>Tous les enregistrements</b><span className="adm-count">{listBusy ? '…' : total}</span></div><div className="adm-filters"><label className="adm-search"><Icon name="search" size={18} /><input aria-label={`Rechercher dans ${cfg.label}`} placeholder={SEARCH_HINTS[section] || "Rechercher…"} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /></label>{LIST_FILTERS[section] && <select aria-label="Filtrer par statut" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">Tous les statuts</option>{LIST_FILTERS[section].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>}<select aria-label="Trier les enregistrements" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>{LIST_SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="adm-icon-btn" aria-label="Actualiser les enregistrements" onClick={() => setRefresh((v) => v + 1)}><Icon name="refresh" size={18} /></button></div></div>
+        {section === 'users' && <div className="adm-user-tabs" role="tablist" aria-label="Catégories d’utilisateurs" onKeyDown={(e) => {
+          const current = USER_TABS.findIndex(([role]) => role === userCategory);
+          const index = e.key === 'Home' ? 0 : e.key === 'End' ? USER_TABS.length - 1 : e.key === 'ArrowRight' ? (current + 1) % USER_TABS.length : e.key === 'ArrowLeft' ? (current + USER_TABS.length - 1) % USER_TABS.length : -1;
+          if (index < 0) return;
+          e.preventDefault(); selectUserCategory(USER_TABS[index][0]);
+          e.currentTarget.querySelectorAll('[role="tab"]')[index].focus();
+        }}>{USER_TABS.map(([role, label]) => <button key={role} type="button" role="tab" id={`user-tab-${role}`} aria-selected={userCategory === role} aria-controls="user-list-panel" tabIndex={userCategory === role ? 0 : -1} onClick={() => selectUserCategory(role)}><Icon name={role === 'super_admin' ? 'lock' : 'team'} size={18} />{label}</button>)}</div>}
+        {cfg.columns && <section className="adm-panel adm-list-panel" id={section === 'users' ? 'user-list-panel' : undefined} role={section === 'users' ? 'tabpanel' : undefined} aria-labelledby={section === 'users' ? `user-tab-${userCategory}` : undefined} tabIndex={section === 'users' ? 0 : undefined}><div className="adm-list-toolbar"><div className="adm-list-title"><b>{section === 'users' ? USER_TABS.find(([role]) => role === userCategory)[1] : 'Tous les enregistrements'}</b><span className="adm-count">{listBusy ? '…' : total}</span></div><div className="adm-filters"><label className="adm-search"><Icon name="search" size={18} /><input aria-label={`Rechercher dans ${cfg.label}`} placeholder={SEARCH_HINTS[section] || "Rechercher…"} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /></label>{LIST_FILTERS[section] && <select aria-label="Filtrer par statut" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">Tous les statuts</option>{LIST_FILTERS[section].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>}<select aria-label="Trier les enregistrements" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>{LIST_SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="adm-icon-btn" aria-label="Actualiser les enregistrements" onClick={() => setRefresh((v) => v + 1)}><Icon name="refresh" size={18} /></button></div></div>
           {(q || status || sort !== 'newest') && <div className="adm-active-filters"><span aria-live="polite">{listBusy ? 'Actualisation…' : `${total} résultat${total > 1 ? 's' : ''}`}</span>{q && <span className="adm-filter-chip">Recherche : {q}<button aria-label="Effacer la recherche" onClick={() => { setQ(''); setPage(1); }}>×</button></span>}{status && <span className="adm-filter-chip">{LIST_FILTERS[section]?.find(([v]) => v === status)?.[1]}<button aria-label="Effacer le filtre de statut" onClick={() => { setStatus(''); setPage(1); }}>×</button></span>}<button className="adm-filter-reset" onClick={resetFilters}>Réinitialiser</button></div>}
           <div className="adm-table-scroll" aria-busy={listBusy}><table><thead><tr>{cfg.columns.map(([key, title]) => <th key={key} scope="col">{title}</th>)}<th scope="col" className="adm-action-col">Actions</th></tr></thead><tbody>{!listBusy && !error && items.map((row) => <tr key={row.id ?? row.user_id}>{cfg.columns.map(([key], i) => <td key={key} className={i === 0 ? 'adm-primary-cell' : ''}>{i === 0 ? <div className="adm-row-name"><span className="adm-row-avatar">{initial(row[key])}</span><div><b><Cell field={key} value={row[key]} /></b><small>#{row.id ?? row.user_id}</small></div></div> : <span className={key === 'body' ? 'adm-truncate' : ''}><Cell field={key} value={row[key]} /></span>}</td>)}<td className="adm-actions"><button className="adm-icon-btn" title={cfg.readOnly ? 'Consulter' : 'Modifier'} aria-label={`${cfg.readOnly ? 'Consulter' : 'Modifier'} ${row.full_name || row.title || row.name || row.id}`} onClick={() => setEditor(row)}><Icon name={cfg.readOnly ? 'eye' : 'edit'} size={17} /></button>{['jobs', 'companies', 'advice'].includes(section) && !(section === 'jobs' && !Number(row.is_active)) && <Link className="adm-icon-btn" title="Voir sur le site" aria-label={`Voir ${row.title || row.name} sur le site`} target="_blank" to={`/${section === 'companies' ? 'entreprises' : section === 'advice' ? 'conseils' : 'jobs'}/${row.id}`}><Icon name="external" size={17} /></Link>}{!cfg.noDelete && <button className="adm-icon-btn danger" disabled={pendingDelete !== null} title="Supprimer" aria-label={`Supprimer ${row.full_name || row.title || row.name || row.id}`} onClick={() => setPendingDelete(row)}><Icon name="trash" size={17} /></button>}</td></tr>)}</tbody></table>{listBusy ? <div className="adm-empty" role="status"><span className="dots" />Chargement des contenus…</div> : !error && !items.length && <div className="adm-empty"><span className="adm-empty-icon"><Icon name="search" size={28} /></span><h3>{q || status ? 'Aucun résultat pour ces filtres' : 'Tout commence par un premier contenu'}</h3><p>{q || status ? 'Essayez un autre mot-clé ou réinitialisez vos filtres.' : 'Les enregistrements de cette rubrique apparaîtront ici.'}</p>{q || status ? <button className="adm-btn" onClick={resetFilters}>Effacer les filtres</button> : !cfg.noCreate && <button className="adm-btn primary" onClick={() => setEditor({ ...cfg.defaults })}>Créer {cfg.singular}</button>}</div>}</div>
           <footer className="adm-pagination"><span>{total ? `${Math.min((page - 1) * 20 + 1, total)}–${Math.min(page * 20, total)} sur ${total}` : '0 enregistrement'}</span><div><button className="adm-btn" disabled={page <= 1 || listBusy} onClick={() => setPage(page - 1)}>← Précédent</button><span>Page {page}</span><button className="adm-btn" disabled={page * 20 >= total || listBusy} onClick={() => setPage(page + 1)}>Suivant →</button></div></footer>

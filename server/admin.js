@@ -1,6 +1,6 @@
 import express from 'express';
 import { db, backendName } from './db.js';
-import { isAdminUser, isAdminAccount } from './auth.js';
+import { isAdminUser, isAdminAccount, adminAccountEmails } from './auth.js';
 import { DEFAULT_CONTENT } from '../client/src/siteContent.js';
 import { validateTeam } from '../client/src/teamContent.js';
 
@@ -114,6 +114,15 @@ export function createAdminRouter() {
       const columns = [...r.search.map((f) => `t.${f}`), ...relatedSearch];
       clauses.push(`(${columns.map((f) => `${f} LIKE ?`).join(' OR ')})`);
       params.push(...columns.map(() => `%${q}%`));
+    }
+    // Filtrer AVANT comptage et pagination : aucune page ne mélange les catégories.
+    if (resource === 'users' && req.query.role !== undefined) {
+      if (!['super_admin', 'client'].includes(req.query.role)) throw fail('Catégorie d’utilisateur non autorisée.');
+      const emails = adminAccountEmails();
+      if (emails.length) {
+        clauses.push(`LOWER(TRIM(t.email)) ${req.query.role === 'client' ? 'NOT IN' : 'IN'} (${emails.map(() => '?').join(', ')})`);
+        params.push(...emails);
+      } else if (req.query.role === 'super_admin') clauses.push('1 = 0');
     }
     const statusColumns = { jobs: 'is_active', alerts: 'enabled', sms: 'is_read' };
     if (Object.hasOwn(statusColumns, resource) && ['0', '1'].includes(req.query.status)) {

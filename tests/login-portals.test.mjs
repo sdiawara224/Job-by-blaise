@@ -19,10 +19,14 @@ async function mount(path, { existingAdmin = false, denyAdmin = false, adminAcco
     calls.push({ url, ...options });
     if (url === '/api/admin/summary') return { ok: true, json: async () => ({ stats: { jobs: 0, applications: 0 } }) };
     if (url === '/api/admin/options') return { ok: true, json: async () => ({ companies: [] }) };
-    if (url.startsWith('/api/admin/users?')) return { ok: true, json: async () => ({ items: [
-      { id: 1, email: 'admin@gmail.com', full_name: 'Administration', city: 'Conakry', role: 'super_admin' },
-      { id: 2, email: 'test@gmail.com', full_name: 'Compte client', city: 'Conakry', role: 'client' },
-    ], total: 2, page: 1 }) };
+    if (url.startsWith('/api/admin/users?')) {
+      const params = new URL(url, 'http://test').searchParams;
+      const items = [
+        { id: 1, email: 'admin@gmail.com', full_name: 'Administration', city: 'Conakry', role: 'super_admin' },
+        { id: 2, email: 'test@gmail.com', full_name: 'Compte client', city: 'Conakry', role: 'client' },
+      ].filter(row => row.role === params.get('role') && row.email.includes(params.get('q') || ''));
+      return { ok: true, json: async () => ({ items, total: items.length, page: 1 }) };
+    }
 
     if (url === '/api/auth/admin/login' && denyAdmin) return { ok: false, status: 403, json: async () => ({ error: 'Ce compte ne possède pas de droits d’administration.' }) };
     return { ok: true, json: async () => ({ token: 'new-session', user: { id: 1, fullName: 'Compte de test', isAdmin: !expiredAdmin && (existingAdmin || adminAccount), role: existingAdmin || adminAccount ? 'super_admin' : 'client' } }) };
@@ -100,15 +104,52 @@ test('une expiration des droits ne donne pas accès à l’espace candidat', asy
   finally { await React.act(async () => root.unmount()); }
 });
 
-test('gestion des utilisateurs : onglet et catégories du super administrateur et du client', async () => {
-  const { root } = await mount('/admin/users', { existingAdmin: true });
+test('gestion des utilisateurs : deux onglets exclusifs, recherche, clavier et filtres réinitialisés', async () => {
+  const { root, calls } = await mount('/admin/users', { existingAdmin: true });
+  const waitList = async () => React.act(async () => { await new Promise(resolve => setTimeout(resolve, 300)); });
+  try {
+    await waitList();
+    assert.ok(container.querySelector('a[href="/admin/users"]').textContent.includes('Gestion des utilisateurs'));
+    const tabs = [...container.querySelectorAll('[role="tab"]')];
+    assert.deepEqual(tabs.map(tab => tab.textContent), ['Administrateur', 'Abonnés']);
+    assert.equal(tabs[0].getAttribute('aria-selected'), 'true');
+    assert.equal(container.querySelectorAll('tbody tr').length, 1);
+    assert.match(container.querySelector('tbody').textContent, /admin@gmail.com.*Super administrateur/);
+    assert.ok(!container.querySelector('tbody').textContent.includes('test@gmail.com'));
+    const input = container.querySelector('.adm-search input');
+    await React.act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'introuvable');
+      input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    await waitList();
+    assert.equal(container.querySelectorAll('tbody tr').length, 0);
+    await React.act(async () => tabs[1].click());
+    assert.equal(container.querySelectorAll('tbody tr').length, 0); // pas d’ancienne ligne pendant le chargement
+    await waitList();
+    assert.equal(input.value, '');
+    assert.equal(tabs[1].getAttribute('aria-selected'), 'true');
+    assert.match(container.querySelector('tbody').textContent, /test@gmail.com.*Client \/ abonné/);
+    assert.ok(!container.querySelector('tbody').textContent.includes('admin@gmail.com'));
+    const last = new URL(calls.filter(call => call.url.startsWith('/api/admin/users?')).at(-1).url, 'http://test');
+    assert.equal(last.searchParams.get('role'), 'client');
+    assert.equal(last.searchParams.get('page'), '1');
+    assert.equal(last.searchParams.get('q'), '');
+    await React.act(async () => tabs[1].dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })));
+    await waitList();
+    assert.equal(document.activeElement, tabs[0]);
+    assert.equal(tabs[0].getAttribute('tabindex'), '0');
+    assert.equal(container.querySelector('[role="tabpanel"]').getAttribute('aria-labelledby'), tabs[0].id);
+    assert.match(container.querySelector('tbody').textContent, /admin@gmail.com/);
+    assert.ok(!container.textContent.includes('admintest'));
+  } finally { await React.act(async () => root.unmount()); }
+});
+
+test('gestion des utilisateurs : lien direct vers les abonnés', async () => {
+  const { root } = await mount('/admin/users?role=client', { existingAdmin: true });
   try {
     await React.act(async () => { await new Promise(resolve => setTimeout(resolve, 300)); });
-    assert.ok(container.querySelector('a[href="/admin/users"]').textContent.includes('Gestion des utilisateurs'));
-    const rows = [...container.querySelectorAll('tbody tr')];
-    assert.equal(rows.length, 2);
-    assert.match(rows[0].textContent, /admin@gmail.com.*Super administrateur/);
-    assert.match(rows[1].textContent, /test@gmail.com.*Client \/ abonné/);
-    assert.ok(!container.textContent.includes('admintest'));
+    assert.equal(container.querySelector('[role="tab"][aria-selected="true"]').textContent, 'Abonnés');
+    assert.match(container.querySelector('tbody').textContent, /test@gmail.com/);
+    assert.ok(!container.querySelector('tbody').textContent.includes('admin@gmail.com'));
   } finally { await React.act(async () => root.unmount()); }
 });

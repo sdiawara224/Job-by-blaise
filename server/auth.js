@@ -53,9 +53,12 @@ export function getUserFromRequest(req) {
 }
 
 // L'identité administrative reste réservée même après expiration des droits.
+export function adminAccountEmails() {
+  return [...new Set(String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean))];
+}
+
 export function isAdminAccount(user) {
-  const emails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-  return !!user && emails.includes(String(user.email || '').trim().toLowerCase());
+  return !!user && adminAccountEmails().includes(String(user.email || '').trim().toLowerCase());
 }
 
 // Aucun rôle fourni par le navigateur ne fait autorité. L'accès est révocable
