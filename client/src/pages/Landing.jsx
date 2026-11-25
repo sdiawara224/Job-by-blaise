@@ -337,7 +337,7 @@ export default function Landing() {
         </div>
         <div className="container footer-bottom">
           <span>© 2026 Job by blaise — Tous droits réservés.</span>
-          <span>Fait avec ❤ en Guinée 🇬🇳 · <Link to="/admin">Administration</Link></span>
+          <span><Link to="/admin">Administration</Link></span>
         </div>
       </footer>
     </div>

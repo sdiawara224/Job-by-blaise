@@ -19,10 +19,11 @@ export default function Navbar() {
     <header className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="container navbar-inner">
         <Logo />
-        <nav className="navbar-links">
+        <nav className="navbar-links" aria-label="Navigation principale">
           <NavLink to="/jobs">Emplois</NavLink>
           <NavLink to="/entreprises">Entreprises</NavLink>
           <NavLink to="/conseils">Conseils carrière</NavLink>
+          <NavLink to="/notre-equipe">Notre équipe</NavLink>
         </nav>
         <div className="navbar-actions">
           {user ? (

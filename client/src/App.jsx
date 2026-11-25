@@ -17,6 +17,7 @@ import Applications from './pages/Applications.jsx';
 import Alerts from './pages/Alerts.jsx';
 import AppJobs from './pages/AppJobs.jsx';
 import Admin from './pages/Admin.jsx';
+import Team from './pages/Team.jsx';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -88,6 +89,7 @@ export default function App() {
       <Route path="/entreprises/:id" element={<EntrepriseDetail />} />
       <Route path="/conseils" element={<Advice />} />
       <Route path="/conseils/:id" element={<AdviceDetail />} />
+      <Route path="/notre-equipe" element={<Team />} />
       <Route path="/connexion" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/inscription" element={<GuestOnly><Register /></GuestOnly>} />
 
