@@ -23,13 +23,14 @@ function Protected({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-loader"><span className="dots" /></div>;
   if (!user) return <Navigate to="/connexion" replace />;
+  if (user.role === 'super_admin' || user.isAdmin) return <Navigate to="/admin" replace />;
   return children;
 }
 
 function GuestOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-loader"><span className="dots" /></div>;
-  if (user) return <Navigate to="/app" replace />;
+  if (user) return <Navigate to={user.role === 'super_admin' || user.isAdmin ? '/admin' : '/app'} replace />;
   return children;
 }
 

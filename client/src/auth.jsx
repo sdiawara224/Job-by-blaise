@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password, { adminMode = false } = {}) => {
     const d = await api(adminMode ? '/auth/admin/login' : '/auth/login', { method: 'POST', body: { email, password } });
+    if (!adminMode && (d.user?.role === 'super_admin' || d.user?.isAdmin)) throw new Error('Ce compte est réservé à la connexion administration.');
     setToken(d.token);
     setUser(d.user);
     return d.user;

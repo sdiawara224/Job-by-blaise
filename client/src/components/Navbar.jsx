@@ -28,7 +28,7 @@ export default function Navbar() {
         <div className="navbar-actions">
           {user ? (
             <>
-              <Link to="/app" className="btn btn-ghost btn-sm">Mon espace</Link>
+              <Link to={user.role === 'super_admin' || user.isAdmin ? '/admin' : '/app'} className="btn btn-ghost btn-sm">{user.role === 'super_admin' || user.isAdmin ? 'Administration' : 'Mon espace'}</Link>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => { logout(); nav('/'); }}

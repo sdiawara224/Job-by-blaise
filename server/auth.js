@@ -52,12 +52,17 @@ export function getUserFromRequest(req) {
   return payload ? payload.uid : null;
 }
 
+// L'identité administrative reste réservée même après expiration des droits.
+export function isAdminAccount(user) {
+  const emails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return !!user && emails.includes(String(user.email || '').trim().toLowerCase());
+}
+
 // Aucun rôle fourni par le navigateur ne fait autorité. L'accès est révocable
 // par configuration serveur et reste fermé avec le secret de développement.
 export function isAdminUser(user) {
   if (!user || !process.env.JBB_SECRET || process.env.JBB_SECRET.length < 32) return false;
   const expiry = process.env.ADMIN_ACCESS_EXPIRES_AT;
   if (expiry && (!Number.isFinite(Date.parse(expiry)) || Date.now() >= Date.parse(expiry))) return false;
-  const emails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-  return emails.includes(String(user.email || '').trim().toLowerCase());
+  return isAdminAccount(user);
 }

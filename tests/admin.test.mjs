@@ -29,7 +29,7 @@ async function request(path, { token, method = 'GET', body } = {}) {
   const res = await fetch(`http://127.0.0.1:${port}/api${path}`, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
   return { status: res.status, data: await res.json() };
 }
-const admin = (await request('/auth/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } })).data;
+const admin = (await request('/auth/admin/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } })).data;
 const candidate = (await request('/auth/login', { method: 'POST', body: { email: 'mamadou@jobbyblaise.com', password: 'demo1234' } })).data;
 const adminReq = (path, options) => request(`/admin${path}`, { token: admin.token, ...options });
 
@@ -297,4 +297,26 @@ test('connexion administration dédiée : valide les droits avant de délivrer u
   const allowed = await request('/auth/admin/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } });
   assert.equal(allowed.status, 200); assert.equal(allowed.data.user.isAdmin, true); assert.ok(allowed.data.token);
   assert.equal((await request('/auth/admin/login', { method: 'POST', body: { email: [], password: null } })).status, 400);
+});
+
+
+test('compte super administrateur : portail candidat et API candidat interdits', async () => {
+  const denied = await request('/auth/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } });
+  assert.equal(denied.status, 403);
+  assert.equal(denied.data.loginUrl, '/admin/connexion');
+  assert.equal(denied.data.token, undefined);
+  assert.equal(admin.user.role, 'super_admin');
+  assert.equal(candidate.user.role, 'client');
+  for (const path of ['/dashboard', '/profile', '/applications', '/alerts', '/jobs/recommended']) {
+    assert.equal((await request(path, { token: admin.token })).status, 403, path);
+  }
+  assert.equal((await request('/profile', { token: admin.token, method: 'PUT', body: { fullName: 'Non' } })).status, 403);
+  assert.equal((await request('/auth/me', { token: admin.token })).data.user.role, 'super_admin');
+  const users = (await adminReq('/users')).data.items;
+  assert.equal(users.find(u => u.email === 'admin@example.com').role, 'super_admin');
+  assert.equal(users.find(u => u.email === 'mamadou@jobbyblaise.com').role, 'client');
+  assert.ok(users.every(u => !('password_hash' in u)));
+  const id = users.find(u => u.email === 'mamadou@jobbyblaise.com').id;
+  assert.equal((await adminReq(`/users/${id}`, { method: 'PUT', body: { role: 'super_admin' } })).status, 400);
+  assert.equal((await adminReq('/users?q=admin%40example.com')).data.total, 1);
 });

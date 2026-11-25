@@ -5,7 +5,7 @@ import {
   db, initSchema, backendName, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
   CONTRACT_TYPES, EDUCATION_ORDER,
 } from './db.js';
-import { hashPassword, verifyPassword, createToken, getUserFromRequest, isAdminUser } from './auth.js';
+import { hashPassword, verifyPassword, createToken, getUserFromRequest, isAdminUser, isAdminAccount } from './auth.js';
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
 import { createAdminRouter, readSiteContent, readTeam } from './admin.js';
@@ -35,6 +35,9 @@ async function requireAuth(req, res, next) {
     if (!uid) return res.status(401).json({ error: 'Authentification requise.' });
     const user = await loadUser(uid);
     if (!user) return res.status(401).json({ error: 'Session expirée.' });
+    if (isAdminAccount(user) && req.path !== '/auth/me' && !req.baseUrl.endsWith('/admin')) {
+      return res.status(403).json({ error: 'Ce compte est réservé à l’interface administration.', loginUrl: '/admin/connexion' });
+    }
     req.user = user;
     next();
   } catch (err) {
@@ -110,6 +113,7 @@ const signIn = (adminOnly = false) => wrap(async (req, res) => {
   if (!user || !verifyPassword(password || '', user.password_hash)) {
     return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
   }
+  if (!adminOnly && isAdminAccount(user)) return res.status(403).json({ error: 'Ce compte est réservé à l’administration. Utilisez la connexion administration.', loginUrl: '/admin/connexion' });
   if (adminOnly && !isAdminUser(user)) return res.status(403).json({ error: 'Ce compte ne possède pas de droits d’administration.' });
   res.json({ token: createToken(user.id), user: publicUser(user) });
 });

@@ -3,7 +3,7 @@
 //  • supabase : Postgres managé via la RPC sécurisée app_exec (usage Vercel)
 // API unifiée : db.prepare(sql).get/all/run(...) → ASYNCHRONES (await partout).
 import { DatabaseSync } from 'node:sqlite';
-import { isAdminUser } from './auth.js';
+import { isAdminUser, isAdminAccount } from './auth.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -268,6 +268,7 @@ export function publicUser(row) {
     id: row.id,
     email: row.email,
     isAdmin: isAdminUser(row),
+    role: isAdminAccount(row) ? 'super_admin' : 'client',
     adminAccessExpiresAt: isAdminUser(row) ? process.env.ADMIN_ACCESS_EXPIRES_AT || null : null,
     fullName: row.full_name,
     phone: row.phone,

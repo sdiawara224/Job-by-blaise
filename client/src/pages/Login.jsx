@@ -4,7 +4,7 @@ import Logo from '../components/Logo.jsx';
 import { useAuth } from '../auth.jsx';
 
 export default function Login({ adminMode = false }) {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -13,6 +13,10 @@ export default function Login({ adminMode = false }) {
   useEffect(() => {
     document.title = `${adminMode ? 'Connexion administration' : 'Connexion candidat'} | Job by blaise`;
   }, [adminMode]);
+
+  useEffect(() => {
+    if (!loading && adminMode && user?.isAdmin) nav('/admin', { replace: true });
+  }, [loading, adminMode, user?.isAdmin, nav]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -51,7 +55,7 @@ export default function Login({ adminMode = false }) {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="••••••••"
           />
-          {err && <div className="form-error" role="alert">{err}</div>}
+          {err && <div className="form-error" role="alert">{err}{!adminMode && <p><Link to="/admin/connexion">Connexion administration →</Link></p>}</div>}
           <button className="btn btn-primary btn-block btn-lg" disabled={busy}>
             {busy ? 'Connexion…' : 'Se connecter'}
           </button>

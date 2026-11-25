@@ -1,6 +1,6 @@
 import express from 'express';
 import { db, backendName } from './db.js';
-import { isAdminUser } from './auth.js';
+import { isAdminUser, isAdminAccount } from './auth.js';
 import { DEFAULT_CONTENT } from '../client/src/siteContent.js';
 import { validateTeam } from '../client/src/teamContent.js';
 
@@ -131,7 +131,7 @@ export function createAdminRouter() {
     const total = Number(count.n);
     const page = Math.min(requestedPage, Math.max(1, Math.ceil(total / limit)));
     const items = await db.prepare(`SELECT ${select} FROM ${r.table} t${join}${where} ORDER BY ${orders[sort]} LIMIT ? OFFSET ?`).all(...params, limit, (page - 1) * limit);
-    res.json({ items: resource === 'jobs' ? items.map(row => ({ ...row, is_active: Number(row.is_active) === 1 && Number(row.published_by_admin) === 1 ? 1 : 0 })) : items, total, page, limit, sort });
+    res.json({ items: resource === 'jobs' ? items.map(row => ({ ...row, is_active: Number(row.is_active) === 1 && Number(row.published_by_admin) === 1 ? 1 : 0 })) : resource === 'users' ? items.map(row => ({ ...row, role: isAdminAccount(row) ? 'super_admin' : 'client' })) : items, total, page, limit, sort });
   }));
   const save = (create) => wrap(async (req, res) => {
     const r = req.resource;
