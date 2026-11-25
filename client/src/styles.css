@@ -441,7 +441,7 @@ h3 { font-size: 1.1rem; font-weight: 700; }
 }
 .section-soft { background: var(--soft); }
 .center-btn { display: flex; justify-content: center; margin-top: 30px; }
-.jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 18px; }
+.jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 18px; }
 
 /* Mini cartes offres */
 .mini-jobs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }

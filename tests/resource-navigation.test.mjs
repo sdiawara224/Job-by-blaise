@@ -163,3 +163,20 @@ test('recherche : connexion, profil modifié et déconnexion rafraîchissent les
     assert.ok(!container.textContent.includes('82%'));
   } finally { await React.act(async () => root.unmount()); }
 });
+
+test('recherche : toutes les offres sont rendues sans dépendre d’une animation de grille', async () => {
+  const jobs = Array.from({ length: 60 }, (_, i) => job(i + 1));
+  globalThis.fetch = async url => url === '/api/jobs/meta'
+    ? response({ cities: ['Conakry'], contracts: ['CDD'], domains: [] })
+    : response({ jobs, total: jobs.length });
+  const root = await mount(JobsBoard);
+  try {
+    const grid = container.querySelector('.jobs-grid');
+    assert.equal(grid.getAttribute('aria-label'), 'Offres d’emploi disponibles');
+    assert.equal(grid.classList.contains('reveal'), false);
+    assert.equal(grid.classList.contains('stagger'), false);
+    assert.equal(grid.querySelectorAll('article.job-card').length, 60);
+    assert.match(container.querySelector('.jobsboard-meta').textContent, /60 offres trouvées/);
+    assert.equal(grid.querySelectorAll('.job-card-title')[59].getAttribute('href'), '/jobs/60');
+  } finally { await React.act(async () => root.unmount()); }
+});

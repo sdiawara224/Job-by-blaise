@@ -84,7 +84,7 @@ export default function JobsBoard() {
       ) : error ? (
         <ResourceError message={error} retry={reload} />
       ) : jobs.length ? (
-        <div className="jobs-grid reveal stagger">
+        <div className="jobs-grid" aria-label="Offres d’emploi disponibles">
           {jobs.map((j) => <JobCard key={j.id} job={j} />)}
         </div>
       ) : (
