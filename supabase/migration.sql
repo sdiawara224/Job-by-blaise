@@ -56,7 +56,8 @@ create table if not exists jobbyblaise.jobs (
   requirements   text default '',
   skills         text default '[]',
   posted_at      timestamptz default now(),
-  is_active      integer default 1
+  is_active      integer default 0,
+  published_by_admin integer not null default 0 check (published_by_admin in (0, 1))
 );
 
 create table if not exists jobbyblaise.applications (

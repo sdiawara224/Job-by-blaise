@@ -279,6 +279,9 @@ Dans Job by blaise, la lettre se joint en un clic à votre candidature depuis la
 ];
 
 export async function seed({ force = false } = {}) {
+  if (process.env.SUPABASE_URL || process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production') {
+    throw new Error('Le jeu de démonstration est réservé à une base SQLite locale.');
+  }
   await initSchema();
 
   if (force) {
@@ -317,18 +320,18 @@ export async function seed({ force = false } = {}) {
     if (used.has(key)) continue;
     used.add(key);
     const tpl = DOMAIN_DESC[domain] || DOMAIN_DESC.Administration;
-    jobValues.push(Array(14).fill('?').join(', '));
+    jobValues.push(Array(15).fill('?').join(', '));
     jobParams.push(
       companyIds[ci], title, city, country, contract, smin, smax, exp, edu, domain,
       `${tpl.desc}\n\nPoste basé à ${city}, ${country} — contrat ${contract}.`,
       `${tpl.req}\n• Expérience minimale : ${exp} an${exp > 1 ? 's' : ''}\n• Niveau d’études : ${edu || 'Non précisé'}`,
-      JSON.stringify(skills), D(daysAgo)
+      JSON.stringify(skills), D(daysAgo), 0
     );
   }
   {
     const ph = jobValues.map((v) => `(${v})`).join(', ');
     await db.prepare(
-      `INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max, experience_min, education_min, domain, description, requirements, skills, posted_at) VALUES ${ph} ON CONFLICT DO NOTHING`
+      `INSERT INTO jobs (company_id, title, city, country, contract, salary_min, salary_max, experience_min, education_min, domain, description, requirements, skills, posted_at, is_active) VALUES ${ph} ON CONFLICT DO NOTHING`
     ).run(...jobParams);
   }
   const jobCount = Number((await db.prepare('SELECT COUNT(*) AS n FROM jobs').get())?.n || 0);

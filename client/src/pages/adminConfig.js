@@ -17,6 +17,7 @@ export const SECTIONS = {
     ['enabled', 'Alertes', 'enabled'], ['phone', 'Téléphone', 'text'], ['send_time', 'Heure d’envoi (heure du serveur)', 'time', true], ['keywords', 'Mots-clés · séparés par des virgules', 'list'], ['cities', 'Villes · séparées par des virgules', 'list'], ['contracts', 'Contrats · séparés par des virgules', 'list'],
   ], noCreate: true, noDelete: true },
   sms: { label: 'Journal SMS', icon: 'sms', description: 'Messages générés par l’application. Ce journal ne certifie pas une livraison par un opérateur SMS.', columns: [['full_name', 'Destinataire'], ['body', 'Message généré'], ['sent_at', 'Date'], ['is_read', 'Lecture']], fields: [], noCreate: true, readOnly: true },
+  team: { label: 'Notre équipe', icon: 'team', description: 'Présentez les membres de votre équipe : portraits, fonctions, biographies et publication.' },
   content: { label: 'Page d’accueil', icon: 'layout', description: 'Votre ton, vos mots. Modifiez les textes de l’accueil et du pied de page sans toucher au code.' },
   settings: { label: 'Configuration', icon: 'settings', description: 'Les informations techniques et les règles d’accès de votre espace.' },
 };

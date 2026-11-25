@@ -13,9 +13,11 @@ const child = spawn(process.execPath, ['--input-type=module', '-e', `
   const { default: app } = await import('./server/index.js');
   const { db } = await import('./server/db.js');
   const { hashPassword } = await import('./server/auth.js');
+  // Simule aussi une ancienne offre active, jamais validée dans le back-office.
+  await db.prepare('UPDATE jobs SET is_active = 1 WHERE id = 1').run();
   await db.prepare('INSERT INTO users (email, password_hash, full_name, city) VALUES (?, ?, ?, ?)').run('admin@example.com', hashPassword('Admin-test-password-123'), 'Administrateur', 'Conakry');
   const server = app.listen(0, '127.0.0.1', () => console.log('TEST_PORT:' + server.address().port));
-`], { cwd: process.cwd(), env: { ...process.env, VERCEL: '1', JBB_DB_DIR: directory, JBB_SECRET: secret, ADMIN_EMAILS: 'admin@example.com,reserved@example.com', SUPABASE_URL: '', SUPABASE_KEY: '' } });
+`], { cwd: process.cwd(), env: { ...process.env, VERCEL: '1', VERCEL_ENV: 'preview', NODE_ENV: 'test', JBB_SEED_DEMO: '1', JBB_DB_DIR: directory, JBB_SECRET: secret, ADMIN_EMAILS: 'admin@example.com,reserved@example.com', SUPABASE_URL: '', SUPABASE_KEY: '' } });
 let logs = '';
 child.stderr.on('data', (d) => { logs += d; });
 const port = await new Promise((resolve, reject) => {
@@ -51,7 +53,7 @@ test('administration fermée sans secret robuste et sans liste explicite', () =>
 test('authentification et autorisation serveur sur chaque ressource', async () => {
   assert.equal(admin.user.isAdmin, true);
   assert.equal(candidate.user.isAdmin, false);
-  for (const path of ['/summary', '/options', '/content', '/jobs', '/companies', '/advice', '/users', '/applications', '/alerts', '/sms']) {
+  for (const path of ['/summary', '/options', '/content', '/team', '/jobs', '/companies', '/advice', '/users', '/applications', '/alerts', '/sms']) {
     assert.equal((await request(`/admin${path}`)).status, 401, path);
     assert.equal((await request(`/admin${path}`, { token: candidate.token })).status, 403, path);
     assert.equal((await adminReq(path)).status, 200, path);
@@ -74,6 +76,24 @@ test('listes paginées, recherche et absence de secrets', async () => {
   assert.equal((await adminReq('/users/1', { method: 'PUT', body: { isAdmin: true } })).status, 400);
   assert.equal((await adminReq('/users/1', { method: 'DELETE' })).status, 405);
 });
+test('publication : les démonstrations et offres non validées sont absentes de tous les accès publics', async () => {
+  assert.equal((await request('/jobs')).data.total, 0);
+  assert.equal((await request('/jobs/1')).status, 404);
+  assert.equal((await request('/stats')).data.jobs, 0);
+  assert.equal((await request('/stats')).data.cities, 0);
+  assert.deepEqual((await request('/jobs/meta')).data.cities, []);
+  assert.ok((await request('/companies')).data.companies.every(company => company.jobCount === 0));
+  assert.deepEqual((await request('/companies/1')).data.jobs, []);
+  assert.deepEqual((await request('/jobs/recommended', { token: candidate.token })).data.jobs, []);
+  assert.deepEqual((await request('/dashboard', { token: candidate.token })).data.recommended, []);
+  assert.equal((await request('/applications', { token: candidate.token, method: 'POST', body: { jobId: 1 } })).status, 404);
+  assert.equal((await adminReq('/jobs?status=1')).data.total, 0);
+  assert.equal((await adminReq('/jobs?status=0')).data.total, 60);
+  // Modifier le titre d’une ancienne offre n’est pas une publication.
+  assert.equal((await adminReq('/jobs/1', { method: 'PUT', body: { title: 'Assistant Administratif' } })).status, 200);
+  assert.equal((await request('/jobs/1')).status, 404);
+  assert.equal((await adminReq('/jobs/1', { method: 'PUT', body: { published_by_admin: 1 } })).status, 400);
+});
 test('CRUD entreprise/offre et archive publique sans casser les références', async () => {
   const company = await adminReq('/companies', { method: 'POST', body: { name: 'Entreprise test admin', sector: 'Tests', city: 'Conakry' } });
   assert.equal(company.status, 201); const companyId = company.data.id;
@@ -87,6 +107,30 @@ test('CRUD entreprise/offre et archive publique sans casser les références', a
   assert.equal((await adminReq(`/jobs/${id}`, { method: 'PUT', body: { company_id: 999999 } })).status, 400);
   assert.equal((await adminReq(`/jobs/${id}`, { method: 'DELETE' })).status, 200);
   assert.equal((await adminReq(`/companies/${companyId}`, { method: 'DELETE' })).status, 200);
+});
+test('publication explicite, modifications et archivage suivent la même source de vérité', async () => {
+  const companyId = (await adminReq('/options')).data.companies[0].id;
+  const body = { title: 'Offre de validation', company_id: companyId, city: 'Ville test', country: 'Guinée', contract: 'CDD', domain: 'Domaine test' };
+  const created = await adminReq('/jobs', { method: 'POST', body });
+  assert.equal(created.status, 201);
+  const id = created.data.id;
+  assert.equal((await request(`/jobs/${id}`)).status, 404); // brouillon par défaut côté serveur
+  assert.equal((await request('/admin/jobs', { method: 'POST', body })).status, 401);
+  assert.equal((await request('/admin/jobs', { token: candidate.token, method: 'POST', body })).status, 403);
+  await adminReq(`/jobs/${id}`, { method: 'PUT', body: { is_active: 1 } });
+  assert.equal((await request('/jobs')).data.total, 1);
+  assert.equal((await request('/stats')).data.jobs, 1);
+  assert.deepEqual((await request('/jobs/meta')).data.cities, ['Ville test']);
+  assert.equal((await request(`/companies/${companyId}`)).data.jobs[0].id, id);
+  assert.equal((await adminReq('/summary')).data.stats.activeJobs, 1);
+  await adminReq(`/jobs/${id}`, { method: 'PUT', body: { title: 'Titre corrigé' } });
+  assert.equal((await request(`/jobs/${id}`)).data.job.title, 'Titre corrigé');
+  await adminReq(`/jobs/${id}`, { method: 'PUT', body: { is_active: 0 } });
+  assert.equal((await request('/jobs')).data.total, 0);
+  assert.equal((await request(`/jobs/${id}`)).status, 404);
+  assert.equal((await request('/stats')).data.jobs, 0);
+  assert.deepEqual((await request(`/companies/${companyId}`)).data.jobs, []);
+  await adminReq(`/jobs/${id}`, { method: 'DELETE' });
 });
 test('conseils éditables avec validation et conflit de doublon', async () => {
   const body = { title: 'Conseil test admin', category: 'CV', content: '**Bonjour**', minutes: 3 };
@@ -128,6 +172,7 @@ test('recherche relationnelle : candidat, e-mail, poste et entreprise', async ()
     assert.equal(result.status, 200);
     assert.ok(result.data.total > 0, q);
   }
+  await adminReq(`/jobs/${first.job_id}`, { method: 'PUT', body: { is_active: 1 } });
   const job = (await request(`/jobs/${first.job_id}`)).data.job;
   assert.ok((await adminReq(`/applications?q=${encodeURIComponent(job.company.name)}`)).data.items.some((a) => a.id === first.id));
   assert.ok((await adminReq(`/jobs?q=${encodeURIComponent(job.company.name)}`)).data.items.every((j) => j.company_name === job.company.name));
@@ -220,4 +265,26 @@ test('alertes : heure réelle validée et mise à jour partielle sans effacer le
   } finally {
     await request('/alerts', { token: candidate.token, method: 'PUT', body: before });
   }
+});
+
+
+test('équipe : administration sécurisée, brouillons privés, ordre et changements persistés', async () => {
+  const member = { id: 'membre-1', name: 'Personne de test', role: 'Fonction de test', bio: 'Présentation de test.', photoUrl: '/portraits/test.jpg', isPublished: false };
+  assert.equal((await request('/admin/team', { method: 'PUT', body: { members: [member] } })).status, 401);
+  assert.equal((await request('/admin/team', { method: 'PUT', token: candidate.token, body: { members: [member] } })).status, 403);
+  assert.equal((await adminReq('/team', { method: 'PUT', body: { members: [member] } })).status, 200);
+  assert.deepEqual((await request('/team')).data.members, []);
+  const second = { ...member, id: 'membre-2', name: 'Autre personne de test', isPublished: true };
+  await adminReq('/team', { method: 'PUT', body: { members: [second, { ...member, isPublished: true }] } });
+  assert.deepEqual((await request('/team')).data.members.map(m => m.id), ['membre-2', 'membre-1']);
+  assert.equal((await adminReq('/team')).data.members[1].name, member.name);
+  assert.equal((await request('/content')).data.content.heroSubtitle, 'Votre avenir commence ici.');
+  assert.ok(!JSON.stringify((await request('/content')).data).includes('Personne de test'));
+  for (const bad of [{ ...member, photoUrl: 'javascript:alert(1)' }, { ...member, photoUrl: '//example.com/image.jpg' }, { ...member, name: ' ' }, { ...member, isPublished: 'true' }, { ...member, unexpected: true }]) {
+    assert.equal((await adminReq('/team', { method: 'PUT', body: { members: [bad] } })).status, 400);
+  }
+  assert.equal((await adminReq('/team', { method: 'PUT', body: { members: [member, member] } })).status, 400);
+  assert.equal((await request('/team')).data.members.length, 2); // validation atomique
+  await adminReq('/team', { method: 'PUT', body: { members: [] } });
+  assert.deepEqual((await request('/team')).data.members, []);
 });

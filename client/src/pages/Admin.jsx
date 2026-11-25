@@ -6,6 +6,7 @@ import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
 import { SECTIONS, LIST_FILTERS, LIST_SORTS, SEARCH_HINTS } from './adminConfig.js';
 import ContentEditor from './admin/ContentEditor.jsx';
+import TeamEditor from './admin/TeamEditor.jsx';
 import RecordDialog from './admin/RecordDialog.jsx';
 import DeleteDialog from './admin/DeleteDialog.jsx';
 import './admin.css';
@@ -84,7 +85,7 @@ export default function Admin() {
   const resetFilters = () => { setQ(''); setStatus(''); setSort('newest'); setPage(1); };
   return <div className="adm-shell" onClickCapture={(e) => {
     const link = e.target.closest('a');
-    if (contentDirty && link && link.target !== '_blank' && !window.confirm('Quitter sans enregistrer les modifications des textes ?')) {
+    if (contentDirty && link && link.target !== '_blank' && !window.confirm('Quitter sans enregistrer les modifications ?')) {
       e.preventDefault(); e.stopPropagation();
     }
   }}>
@@ -96,6 +97,8 @@ export default function Admin() {
         {notice && <div className="adm-toast" role="status"><Icon name="check" size={18} />{notice}<button aria-label="Fermer la notification" onClick={() => setNotice('')}>×</button></div>}
         {error && <div className="adm-error" role="alert">{error} <button className="adm-btn" onClick={() => setRefresh((v) => v + 1)}>Réessayer</button></div>}
         {section === 'overview' && (summary ? <Overview data={summary} open={openCreate} /> : !error && <div className="adm-empty">Chargement de votre tableau de bord…</div>)}
+        {section === 'jobs' && <div className="adm-note"><b>Publication depuis l’administration uniquement.</b><p>Les nouvelles offres sont en brouillon. Pour rendre une offre visible sur le site, ouvrez sa fiche, sélectionnez « Publiée » puis enregistrez. Les anciennes offres de démonstration restent conservées, mais ne sont pas publiques sans cette validation.</p></div>}
+        {section === 'team' && <TeamEditor notify={setNotice} onDirtyChange={setContentDirty} />}
         {section === 'content' && <ContentEditor notify={setNotice} onDirtyChange={setContentDirty} jobCount={summary?.stats.activeJobs} />}
         {section === 'settings' && <div className="adm-settings"><section className="adm-panel"><Icon name="lock" size={26} /><h2>Accès & sécurité</h2><p>L’accès administrateur dépend de la liste <code>ADMIN_EMAILS</code> et d’un secret de signature serveur robuste (<code>JBB_SECRET</code>, au moins 32 caractères). Aucun candidat ne peut s’attribuer ces droits depuis son profil.</p><dl><dt>Compte connecté</dt><dd>{user.email}</dd><dt>Droits</dt><dd>Administration des contenus</dd></dl></section><section className="adm-panel"><Icon name="settings" size={26} /><h2>Environnement</h2><dl><dt>Base de données</dt><dd>{summary?.backend === 'supabase' ? 'Supabase · PostgreSQL' : summary?.backend === 'sqlite' ? 'SQLite · environnement local' : 'Vérification…'}</dd><dt>Contenus éditoriaux</dt><dd>Enregistrés en base de données</dd><dt>SMS</dt><dd>Génération interne · pas de confirmation opérateur</dd></dl><p>Les secrets et la connexion à la base se configurent uniquement sur le serveur, jamais dans le navigateur.</p></section></div>}
         {cfg.columns && <section className="adm-panel adm-list-panel"><div className="adm-list-toolbar"><div className="adm-list-title"><b>Tous les enregistrements</b><span className="adm-count">{listBusy ? '…' : total}</span></div><div className="adm-filters"><label className="adm-search"><Icon name="search" size={18} /><input aria-label={`Rechercher dans ${cfg.label}`} placeholder={SEARCH_HINTS[section] || "Rechercher…"} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /></label>{LIST_FILTERS[section] && <select aria-label="Filtrer par statut" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}><option value="">Tous les statuts</option>{LIST_FILTERS[section].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>}<select aria-label="Trier les enregistrements" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}>{LIST_SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button className="adm-icon-btn" aria-label="Actualiser les enregistrements" onClick={() => setRefresh((v) => v + 1)}><Icon name="refresh" size={18} /></button></div></div>

@@ -34,7 +34,7 @@ npm install
 npm run dev        # client (5173) + API proxy → 3001
 ```
 
-Démo (un clic sur la page de connexion) :
+Démo locale, après activation explicite de `JBB_SEED_DEMO=1` (SQLite uniquement, hors production) :
 
 ```
 mamadou@jobbyblaise.com
@@ -48,7 +48,7 @@ npm run build      # → dist/
 npm start          # serveur sur 0.0.0.0:3001 (SPA + API)
 ```
 
-Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedée automatiquement** (si aucun fichier n'existe). Pour repartir de zéro : `rm -rf database && npm run seed`.
+Au premier démarrage, la base SQLite locale `database/jobbyblaise.db` est créée **vide**, sans injection automatique de démonstrations. Pour tester avec des données fictives, activer `JBB_SEED_DEMO=1` dans l’environnement du serveur local (ou utiliser `npm run seed`, qui réinitialise la base locale). Les offres de démonstration restent non publiées jusqu’à leur validation dans l’administration. Ne jamais utiliser le seed sur une base réelle : il est bloqué pour Supabase et en production.
 
 ## 🗂️ Structure
 
@@ -66,7 +66,7 @@ Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedé
 │   ├── routes.js      # REST API
 │   └── index.js       # serveur HTTP (SPA dist + API) + scheduler d'alertes 7h00
 ├── supabase/          # migration.sql (7 tables schéma jobbyblaise + RPC app_exec)
-├── database/          # SQLite (auto-seed, ignoré par git)
+├── database/          # SQLite local (ignoré par git)
 └── smoke-test.mjs     # test des endpoints critiques
 ```
 
@@ -94,7 +94,7 @@ Au premier démarrage, la base `database/jobbyblaise.db` est **créée et seedé
 ## 🧪 Tests
 
 ```bash
-npm run seed        # (re)crée la base
+npm run seed        # OPTIONNEL : réinitialise uniquement la base de démonstration locale
 npm start &         # serveur sur :3001
 WITH_TOKEN=1 npm run test:smoke  # 15 endpoints critiques
 npm test            # régressions : dates SQLite/Postgres, landing, recherche, erreurs API
@@ -105,9 +105,35 @@ npm test            # régressions : dates SQLite/Postgres, landing, recherche, 
 - **Vercel** sert le build (`dist/`) + l'API serverless (`api/index.js`). Variables d'env **côté serveur uniquement** :
   - `SUPABASE_URL` — ex. `https://<ref>.supabase.co`
   - `SUPABASE_KEY` — clé de service (`service_role`), jamais exposée au front (pas de préfixe `VITE_`)
-- Sans ces variables (ou si Supabase est injoignable), l'app fonctionne en **SQLite éphémère** (`/tmp`) avec re-seed automatique.
+- Configurer ces variables en production. Si Supabase est configuré mais indisponible, ou si la migration requise manque, le serveur refuse le démarrage sur Vercel/en production plutôt que de substituer une base locale. Aucun re-seed automatique n’a lieu.
 - Sur Supabase, les tables vivent dans un schéma dédié **`jobbyblaise`** (le schéma `public` de l'hôte reste intact) ; toutes les requêtes passent par la RPC `public.app_exec` (SECURITY DEFINER, réservée aux rôles de service).
 - **Cron quotidien** (`vercel.json`) : `GET /api/health` à 06:00 UTC — 2 appels DB qui empêchent la pause automatique de Supabase après 7 jours d'inactivité.
+
+## Publication des offres et équipe
+
+### Une seule source pour les offres publiques
+
+- Créer une offre dans **Administration → Offres d’emploi**. Elle est en brouillon par défaut, côté interface et côté API.
+- Choisir **« Publiée sur le site »** puis enregistrer. Le serveur administrateur pose `published_by_admin=1` ; ce champ ne peut pas être fourni dans le formulaire ou une requête publique.
+- Le site n’expose que `is_active=1 AND published_by_admin=1` : liste/recherche, fiche, recommandations, alertes, compteurs, filtres et offres des entreprises. Archiver une offre la retire de ces accès sans effacer les candidatures historiques.
+- Les anciennes offres, y compris les démonstrations, restent dans l’administration mais sont **non publiques tant qu’elles ne sont pas validées**. Aucun ancien enregistrement n’est approuvé automatiquement.
+
+### Migration avant le prochain déploiement
+
+1. Appliquer **`supabase/admin-job-publication.sql`** au schéma `jobbyblaise` du projet Supabase existant. Migration additive/idempotente : aucune suppression de ligne, aucun autre schéma touché. Pour une nouvelle installation, le schéma de base inclut également le champ.
+2. Déployer ensuite le nouveau code Vercel. Le code précédent continue de fonctionner avec la colonne supplémentaire.
+3. Au premier déploiement, le compteur public peut être à **zéro** : publier uniquement les offres vérifiées dans l’administration. Ne pas valider le jeu de démonstration en masse.
+4. Vérifier une création en brouillon, une publication, une modification et un archivage. Les tests automatisés réalisent ce cycle sur une base temporaire, jamais en production.
+
+### Notre équipe
+
+- **Administration → Notre équipe** : noms, fonctions, présentations, liens HTTPS/chemins locaux des portraits, ordre et publication individuelle. Enregistrer applique les changements.
+- Les profils sont des brouillons par défaut ; `GET /api/team` ne retourne que les profils publiés. Pas de faux noms ni de photos générées par défaut.
+- Données enregistrées dans la ligne **2** de `site_content` ; la ligne **1** des textes de l’accueil reste indépendante. La migration `supabase/admin-content.sql` doit déjà être appliquée.
+- La page publique `/notre-equipe` utilise trois colonnes sur ordinateur, deux sur tablette et une sur mobile, avec remplacement des photos absentes/cassées.
+- Sans profil publié : emplacements « Présentation à venir » clairement identifiés. Ajouter les vrais profils et leurs photos avec l’accord des personnes concernées.
+
+Tests supplémentaires : `node tests/team-layout.browser.mjs` et `node tests/jobs-layout.browser.mjs` (dépendances navigateur facultatives documentées dans ces fichiers).
 
 ## 🎨 Design system
 

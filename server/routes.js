@@ -8,16 +8,21 @@ import {
 import { hashPassword, verifyPassword, createToken, getUserFromRequest } from './auth.js';
 import { computeMatch, profileCompletion } from './match.js';
 import { seed } from './seed.js';
-import { createAdminRouter, readSiteContent } from './admin.js';
+import { createAdminRouter, readSiteContent, readTeam } from './admin.js';
 import { isRecord, validateRegistration, validateProfile, validateAlerts } from './candidateValidation.js';
 
 await initSchema();
-await seed(); // auto-seed si la base est vide
+// Les données de démonstration ne sont jamais injectées automatiquement.
+if (process.env.JBB_SEED_DEMO === '1' && !process.env.SUPABASE_URL && process.env.VERCEL_ENV !== 'production' && process.env.NODE_ENV !== 'production') await seed();
 
 const router = express.Router();
 
 // Express 4 : on rejoue les promesses rejetées vers le gestionnaire d'erreurs.
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+router.get('/team', wrap(async (req, res) => {
+  const team = await readTeam();
+  res.json({ members: team.members.filter(member => member.isPublished), updatedAt: team.updatedAt });
+}));
 
 // ---------- utilitaires ----------
 async function loadUser(id) {
@@ -38,7 +43,7 @@ async function requireAuth(req, res, next) {
 }
 
 async function searchJobs({ search, city, contract, domain, sort } = {}) {
-  const clauses = ['j.is_active = 1'];
+  const clauses = ['j.is_active = 1 AND j.published_by_admin = 1'];
   const params = [];
   if (search) {
     clauses.push('(j.title LIKE ? OR c.name LIKE ? OR j.domain LIKE ? OR j.skills LIKE ?)');
@@ -148,8 +153,8 @@ router.put('/profile', requireAuth, wrap(async (req, res) => {
 
 // ================= OFFRES =================
 router.get('/jobs/meta', wrap(async (req, res) => {
-  const domains = (await db.prepare('SELECT DISTINCT domain FROM jobs WHERE is_active=1 ORDER BY domain').all()).map((r) => r.domain);
-  const cities = (await db.prepare('SELECT DISTINCT city FROM jobs WHERE is_active=1 ORDER BY city').all()).map((r) => r.city);
+  const domains = (await db.prepare('SELECT DISTINCT domain FROM jobs WHERE is_active=1 AND published_by_admin=1 ORDER BY domain').all()).map((r) => r.domain);
+  const cities = (await db.prepare('SELECT DISTINCT city FROM jobs WHERE is_active=1 AND published_by_admin=1 ORDER BY city').all()).map((r) => r.city);
   res.json({
     cities, domains,
     contracts: CONTRACT_TYPES,
@@ -176,7 +181,7 @@ router.get('/jobs/recommended', requireAuth, wrap(async (req, res) => {
 }));
 
 router.get('/jobs/:id(\\d+)', wrap(async (req, res) => {
-  const row = await db.prepare(`${JOB_SELECT} WHERE j.id = ? AND j.is_active = 1`).get(Number(req.params.id));
+  const row = await db.prepare(`${JOB_SELECT} WHERE j.id = ? AND j.is_active = 1 AND j.published_by_admin = 1`).get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'Offre introuvable.' });
   const job = jobRow(row);
   const uid = getUserFromRequest(req);
@@ -214,7 +219,7 @@ router.get('/applications', requireAuth, wrap(async (req, res) => {
 
 router.post('/applications', requireAuth, wrap(async (req, res) => {
   const { jobId, coverLetter } = req.body || {};
-  const job = await db.prepare('SELECT id FROM jobs WHERE id = ? AND is_active = 1').get(Number(jobId));
+  const job = await db.prepare('SELECT id FROM jobs WHERE id = ? AND is_active = 1 AND published_by_admin = 1').get(Number(jobId));
   if (!job) return res.status(404).json({ error: 'Offre introuvable.' });
   const exists = await db.prepare('SELECT id FROM applications WHERE user_id = ? AND job_id = ?').get(req.user.id, job.id);
   if (exists) return res.status(409).json({ error: 'Vous avez déjà postulé à cette offre.' });
@@ -358,7 +363,7 @@ function companyRow(r, jobCount) {
 router.get('/companies', wrap(async (req, res) => {
   const rows = await db.prepare(`
     SELECT c.*, COUNT(j.id) AS job_count
-    FROM companies c LEFT JOIN jobs j ON j.company_id = c.id AND j.is_active = 1
+    FROM companies c LEFT JOIN jobs j ON j.company_id = c.id AND j.is_active = 1 AND j.published_by_admin = 1
     GROUP BY c.id ORDER BY job_count DESC, c.name
   `).all();
   res.json({ companies: rows.map((r) => companyRow(r)) });
@@ -425,9 +430,9 @@ router.get('/dashboard', requireAuth, wrap(async (req, res) => {
 
 router.get('/stats', wrap(async (req, res) => {
   const [jobs, companies, cities, users] = await Promise.all([
-    db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1').get(),
+    db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1 AND published_by_admin = 1').get(),
     db.prepare('SELECT COUNT(*) AS n FROM companies').get(),
-    db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1').get(),
+    db.prepare('SELECT COUNT(DISTINCT city) AS n FROM jobs WHERE is_active = 1 AND published_by_admin = 1').get(),
     db.prepare('SELECT COUNT(*) AS n FROM users').get(),
   ]);
   res.json({

@@ -197,10 +197,25 @@ h3 { font-size: 1.1rem; font-weight: 700; }
 }
 
 /* ---------------- Notre équipe ---------------- */
-.team-introduction { max-width: 760px; margin: 36px auto; padding: clamp(24px, 5vw, 48px); text-align: center; }
-.team-introduction-icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto 24px; border-radius: 20px; background: var(--blue-soft); color: var(--blue); }
-.team-introduction p { margin: 16px auto 0; max-width: 540px; }
-.team-introduction-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.team-page { background: linear-gradient(180deg, var(--soft) 0%, #fff 100%); }
+.team-section { padding-top: 56px; padding-bottom: 80px; }
+.team-heading { max-width: 760px; margin: 0 auto 56px; text-align: center; }
+.team-eyebrow { display: inline-block; padding: 5px 14px; margin-bottom: 20px; border-radius: 999px; background: var(--blue-soft); color: var(--blue-dark); font-size: .85rem; font-weight: 700; }
+.team-heading h1 { font-size: clamp(2rem, 4vw, 2.8rem); }
+.team-heading > p { max-width: 560px; margin: 18px auto 0; color: var(--muted); font-size: 1.1rem; }
+.team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.team-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow); }
+.team-card-photo { aspect-ratio: 3 / 4; overflow: hidden; background: #e8edf5; }
+.team-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.team-photo-placeholder { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; color: #64748b; }
+.team-card-copy { padding: 24px; overflow-wrap: anywhere; }
+.team-card-copy h2 { font-size: 1.3rem; line-height: 1.35; }
+.team-card-role { margin-top: 5px; color: var(--blue-dark); font-weight: 600; }
+.team-card-bio { margin-top: 18px; color: var(--muted); white-space: pre-line; }
+.team-card-upcoming .team-card-copy p { margin-top: 12px; color: var(--muted); }
+.team-empty { margin: -24px auto 28px; text-align: center; color: var(--muted); }
+@media (max-width: 900px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (max-width: 600px) { .team-grid { grid-template-columns: minmax(0, 1fr); } .team-section { padding-top: 36px; padding-bottom: 48px; } .team-heading { margin-bottom: 36px; } }
 
 /* ---------------- HERO ---------------- */
 .hero {

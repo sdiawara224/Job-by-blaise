@@ -2,6 +2,7 @@ import express from 'express';
 import { db, backendName } from './db.js';
 import { isAdminUser } from './auth.js';
 import { DEFAULT_CONTENT } from '../client/src/siteContent.js';
+import { validateTeam } from '../client/src/teamContent.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -26,7 +27,7 @@ const RESOURCES = {
   jobs: {
     table: 'jobs', search: ['title', 'city', 'domain'],
     fields: { title: text(180, true), company_id: integer(1), city: text(100, true), country: text(100, true), contract: text(80, true), domain: text(120, true), salary_min: integer(), salary_max: integer(), experience_min: integer(0, 60), education_min: text(100), description: text(20000), requirements: text(20000), skills: list, is_active: integer(0, 1) },
-    required: ['title', 'company_id', 'city', 'country', 'contract', 'domain'], defaults: { salary_min: 0, salary_max: 0, experience_min: 0, education_min: '', description: '', requirements: '', skills: [], is_active: 1 },
+    required: ['title', 'company_id', 'city', 'country', 'contract', 'domain'], defaults: { salary_min: 0, salary_max: 0, experience_min: 0, education_min: '', description: '', requirements: '', skills: [], is_active: 0 },
   },
   companies: { table: 'companies', search: ['name', 'sector', 'city'], fields: { name: text(180, true), sector: text(120, true), city: text(100, true), description: text(10000), color, founded_year: integer(1800, new Date().getFullYear()), staff_size: text(100) }, required: ['name', 'sector', 'city'], defaults: { description: '', color: '#2E6BFF', founded_year: 2020, staff_size: '1 à 10 collaborateurs' } },
   advice: { table: 'advice', search: ['title', 'category', 'excerpt'], fields: { title: text(200, true), category: text(100, true), excerpt: text(1000), content: text(40000, true), minutes: integer(1, 120), color }, required: ['title', 'category', 'content'], defaults: { excerpt: '', minutes: 4, color: '#2E6BFF' } },
@@ -43,6 +44,12 @@ export async function readSiteContent() {
   return { content: { ...DEFAULT_CONTENT, ...saved }, updatedAt: row?.updated_at || null };
 }
 
+// L’équipe occupe la ligne 2 ; les textes de l’accueil restent dans la ligne 1.
+export async function readTeam() {
+  const row = await db.prepare('SELECT data, updated_at FROM site_content WHERE id = 2').get();
+  return { members: row ? validateTeam(JSON.parse(row.data)) : [], updatedAt: row?.updated_at || null };
+}
+
 export function createAdminRouter() {
   const router = express.Router();
   router.use((req, res, next) => {
@@ -52,7 +59,7 @@ export function createAdminRouter() {
   });
   router.get('/summary', wrap(async (req, res) => {
     const queries = {
-      jobs: 'SELECT COUNT(*) AS n FROM jobs', activeJobs: 'SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1',
+      jobs: 'SELECT COUNT(*) AS n FROM jobs', activeJobs: 'SELECT COUNT(*) AS n FROM jobs WHERE is_active = 1 AND published_by_admin = 1',
       companies: 'SELECT COUNT(*) AS n FROM companies', users: 'SELECT COUNT(*) AS n FROM users',
       advice: 'SELECT COUNT(*) AS n FROM advice', applications: 'SELECT COUNT(*) AS n FROM applications',
       pending: "SELECT COUNT(*) AS n FROM applications WHERE status = 'En attente'",
@@ -64,6 +71,12 @@ export function createAdminRouter() {
   }));
   router.get('/options', wrap(async (req, res) => {
     res.json({ companies: await db.prepare('SELECT id, name FROM companies ORDER BY name').all() });
+  }));
+  router.get('/team', wrap(async (req, res) => res.json(await readTeam())));
+  router.put('/team', wrap(async (req, res) => {
+    const members = validateTeam(req.body?.members);
+    await db.prepare('INSERT INTO site_content (id, data, updated_at) VALUES (2, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at').run(JSON.stringify(members));
+    res.json(await readTeam());
   }));
   router.get('/content', wrap(async (req, res) => res.json(await readSiteContent())));
   router.put('/content', wrap(async (req, res) => {
@@ -104,7 +117,7 @@ export function createAdminRouter() {
     }
     const statusColumns = { jobs: 'is_active', alerts: 'enabled', sms: 'is_read' };
     if (Object.hasOwn(statusColumns, resource) && ['0', '1'].includes(req.query.status)) {
-      clauses.push(`t.${statusColumns[resource]} = ?`); params.push(Number(req.query.status));
+      clauses.push(resource === 'jobs' ? `(CASE WHEN t.is_active = 1 AND t.published_by_admin = 1 THEN 1 ELSE 0 END) = ?` : `t.${statusColumns[resource]} = ?`); params.push(Number(req.query.status));
     }
     if (resource === 'applications' && ['En attente', 'En cours', 'Acceptée', 'Refusée'].includes(req.query.status)) { clauses.push('t.status = ?'); params.push(req.query.status); }
     const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '';
@@ -118,7 +131,7 @@ export function createAdminRouter() {
     const total = Number(count.n);
     const page = Math.min(requestedPage, Math.max(1, Math.ceil(total / limit)));
     const items = await db.prepare(`SELECT ${select} FROM ${r.table} t${join}${where} ORDER BY ${orders[sort]} LIMIT ? OFFSET ?`).all(...params, limit, (page - 1) * limit);
-    res.json({ items, total, page, limit, sort });
+    res.json({ items: resource === 'jobs' ? items.map(row => ({ ...row, is_active: Number(row.is_active) === 1 && Number(row.published_by_admin) === 1 ? 1 : 0 })) : items, total, page, limit, sort });
   }));
   const save = (create) => wrap(async (req, res) => {
     const r = req.resource;
@@ -138,6 +151,9 @@ export function createAdminRouter() {
     if (create && r.required?.some((key) => values[key] === undefined || values[key] === '')) throw fail('Renseignez tous les champs obligatoires.');
     const merged = { ...old, ...values };
     if (req.params.resource === 'jobs') {
+      // Ce marqueur ne fait jamais partie des champs acceptés du navigateur.
+      // Seule une publication explicite dans cette route administrateur l'accorde.
+      if (Number(body.is_active) === 1) values.published_by_admin = 1;
       if (merged.salary_max && merged.salary_min > merged.salary_max) throw fail('Le salaire maximum doit être supérieur au minimum.');
       if (!await db.prepare('SELECT id FROM companies WHERE id = ?').get(merged.company_id)) throw fail('Choisissez une entreprise existante.');
     }

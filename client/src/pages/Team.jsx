@@ -1,32 +1,37 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
+import TeamCard from '../components/TeamCard.jsx';
+import useApiResource from '../hooks/useApiResource.js';
+import ResourceError from '../components/ResourceError.jsx';
 import Icon from '../components/Icon.jsx';
 
 export default function Team() {
+  const { data, loading, error, reload } = useApiResource('/team');
+  const members = data?.members || [];
   useEffect(() => { document.title = 'Notre équipe | Job by blaise'; }, []);
 
   return (
-    <div className="page">
+    <div className="page team-page">
       <Navbar />
-      <section className="page-hero">
-        <div className="container">
-          <span className="kicker">Notre équipe</span>
+      <main className="container team-section">
+        <header className="team-heading">
+          <span className="team-eyebrow">Notre équipe</span>
           <h1>Les visages derrière Job by blaise</h1>
-          <p>Découvrez prochainement les personnes qui font vivre le portail.</p>
-        </div>
-      </section>
-      <main className="container section-tight">
-        <section className="card team-introduction" aria-labelledby="team-introduction-title">
-          <span className="team-introduction-icon"><Icon name="team" size={32} /></span>
-          <h2 id="team-introduction-title">Faisons connaissance</h2>
-          <p>La présentation des membres de notre équipe sera disponible prochainement : portraits, fonctions et parcours.</p>
-          <p className="muted">En attendant, explorez les opportunités et les conseils de Job by blaise.</p>
-          <div className="team-introduction-actions">
-            <Link to="/jobs" className="btn btn-primary">Découvrir les offres</Link>
-            <Link to="/conseils" className="btn btn-outline">Nos conseils carrière</Link>
-          </div>
-        </section>
+          <p>Découvrez les personnes qui font vivre votre plateforme d’emploi.</p>
+        </header>
+        {loading ? <div className="empty" role="status">Chargement de l’équipe…</div> : error ? <ResourceError message={error} retry={reload} /> : members.length ? (
+          <div className="team-grid">{members.map(member => <TeamCard key={member.id} member={member} />)}</div>
+        ) : (
+          <>
+            <p className="team-empty" role="status">La présentation de notre équipe sera disponible prochainement.</p>
+            <div className="team-grid" aria-label="Présentation de l’équipe à venir">
+              {[1, 2, 3].map(number => <article className="team-card team-card-upcoming" key={number}>
+                <div className="team-card-photo"><div className="team-photo-placeholder"><Icon name="profile" size={56} /><span>Photo à venir</span></div></div>
+                <div className="team-card-copy"><h2>Présentation à venir</h2><p>Les profils seront ajoutés prochainement.</p></div>
+              </article>)}
+            </div>
+          </>
+        )}
       </main>
       <footer className="footer footer-slim">
         <div className="container footer-bottom">

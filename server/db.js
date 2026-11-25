@@ -18,7 +18,7 @@ let backend = SUPABASE_URL && SUPABASE_KEY ? 'supabase' : 'sqlite';
 export const backendName = () => backend;
 
 // ---------------- SQLite (local / repli) ----------------
-// Vercel : FS en lecture seule sauf /tmp → base éphémère ré-seedée à chaque cold start
+// Vercel : FS en lecture seule sauf /tmp ; aucun jeu de démonstration automatique.
 const DB_DIR = process.env.JBB_DB_DIR || (process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'database'));
 const DB_PATH = path.join(DB_DIR, 'jobbyblaise.db');
 fs.mkdirSync(DB_DIR, { recursive: true });
@@ -79,7 +79,8 @@ const SQLITE_DDL = `
     requirements TEXT DEFAULT '',
     skills TEXT DEFAULT '[]',
     posted_at TEXT DEFAULT (datetime('now')),
-    is_active INTEGER DEFAULT 1
+    is_active INTEGER DEFAULT 0,
+    published_by_admin INTEGER NOT NULL DEFAULT 0 CHECK (published_by_admin IN (0, 1))
   );
 
   CREATE TABLE IF NOT EXISTS applications (
@@ -216,14 +217,18 @@ export const db = {
 export async function initSchema() {
   if (backend === 'supabase') {
     try {
-      await rpcCall('one', 'SELECT COUNT(*) AS n FROM jobs', []);
+      await rpcCall('one', 'SELECT COUNT(*) AS n FROM jobs WHERE published_by_admin = 1', []);
       return;
     } catch (err) {
+      if (process.env.VERCEL || process.env.NODE_ENV === 'production') throw new Error('Base Supabase indisponible ou migration publication manquante.', { cause: err });
       console.warn('[db] Supabase indisponible → repli SQLite :', String(err.message).slice(0, 200));
       backend = 'sqlite';
     }
   }
   sqlite.exec(SQLITE_DDL);
+  if (!sqlite.prepare("PRAGMA table_info(jobs)").all().some(column => column.name === "published_by_admin")) {
+    sqlite.exec("ALTER TABLE jobs ADD COLUMN published_by_admin INTEGER NOT NULL DEFAULT 0 CHECK (published_by_admin IN (0, 1))");
+  }
 }
 
 export const EDUCATION_ORDER = [
