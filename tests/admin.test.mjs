@@ -348,3 +348,62 @@ test('utilisateurs : catégories filtrées avant total, recherche et pagination'
   assert.equal(stillAdmins.total, 1);
   assert.equal(stillAdmins.page, 1);
 });
+
+
+test('notifications : changement effectif, compteurs cohérents, isolation et lecture bornée', async () => {
+  const owner = (await request('/auth/register', { method: 'POST', body: { email: 'notified@example.com', fullName: 'Abonné notifié', password: 'test-notifications-123' } })).data;
+  const own = (path, options) => request(path, { token: owner.token, ...options });
+  const activity = async () => (await own('/activity')).data;
+  assert.equal((await request('/activity')).status, 401);
+  assert.equal((await request('/activity', { token: admin.token })).status, 403);
+  await own('/alerts', { method: 'PUT', body: { enabled: false } });
+  await adminReq('/jobs/60', { method: 'PUT', body: { is_active: 1 } });
+  const app = await own('/applications', { method: 'POST', body: { jobId: 60 } });
+  assert.equal(app.status, 201);
+  const id = app.data.id;
+  assert.equal((await activity()).notifications.length, 0);
+  assert.equal((await activity()).stats.pending, 1);
+  const change = status => adminReq(`/applications/${id}`, { method: 'PUT', body: { status } });
+  assert.equal((await change('En cours')).status, 200);
+  const progress = await activity();
+  assert.equal(progress.unreadNotifications, 1);
+  assert.equal(progress.stats.inProgress, 1);
+  assert.equal(progress.notifications[0].oldStatus, 'En attente');
+  assert.equal(progress.notifications[0].newStatus, 'En cours');
+  assert.ok(progress.notifications[0].title);
+  assert.equal(progress.unreadSms, 0); // les notifications ne sont pas des SMS
+  assert.equal((await change('En cours')).status, 200);
+  assert.equal((await activity()).notifications.length, 1);
+  assert.equal((await change('Invalide')).status, 400);
+  assert.equal((await request(`/admin/applications/${id}`, { method: 'PUT', token: owner.token, body: { status: 'Acceptée' } })).status, 403);
+  await change('Acceptée');
+  const accepted = await activity();
+  assert.equal(accepted.stats.accepted, 1);
+  assert.equal(accepted.stats.inProgress, 0);
+  assert.equal(accepted.notifications.length, 2);
+  assert.equal((await own('/dashboard')).data.applications.accepted, accepted.stats.accepted);
+  assert.deepEqual((await own('/applications')).data.stats, accepted.stats);
+  const latestId = accepted.notifications[0].id;
+  const other = (await request('/activity', { token: candidate.token })).data;
+  assert.ok(!other.notifications.some(n => n.id === latestId));
+  await request('/notifications/read', { token: candidate.token, method: 'POST', body: { ids: [latestId] } });
+  assert.equal((await activity()).unreadNotifications, 2);
+  assert.equal((await own('/notifications/read', { method: 'POST', body: { ids: [progress.notifications[0].id] } })).status, 200);
+  assert.equal((await activity()).unreadNotifications, 1);
+  await change('Refusée'); // arrive après l’affichage de latestId
+  await own('/notifications/read', { method: 'POST', body: { upTo: latestId } });
+  const rejected = await activity();
+  assert.equal(rejected.unreadNotifications, 1);
+  assert.equal(rejected.stats.accepted, 0);
+  assert.equal(rejected.stats.total, 1);
+  assert.equal(rejected.notifications[0].isRead, false);
+  for (const body of [{}, { ids: [] }, { ids: ['1'] }, { upTo: -1 }, { ids: [1], user_id: owner.user.id }]) {
+    assert.equal((await own('/notifications/read', { method: 'POST', body })).status, 400);
+  }
+  await own(`/applications/${id}`, { method: 'DELETE' });
+  const withdrawn = await activity();
+  assert.equal(withdrawn.stats.total, 0);
+  assert.equal(withdrawn.notifications.length, 3);
+  assert.ok(withdrawn.notifications.every(n => n.applicationId === null));
+  assert.equal(withdrawn.notifications[0].newStatus, 'Refusée');
+});

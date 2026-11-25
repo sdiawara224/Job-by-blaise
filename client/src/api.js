@@ -20,6 +20,9 @@ export async function api(path, { method = 'GET', body } = {}) {
     err.status = res.status;
     throw err;
   }
+  if (method !== 'GET' && /^\/(applications|alerts|notifications)(\/|$)/.test(path)) {
+    window.dispatchEvent(new window.Event('candidate-activity-changed'));
+  }
   return data;
 }
 

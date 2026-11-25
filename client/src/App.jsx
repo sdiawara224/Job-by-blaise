@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import Applications from './pages/Applications.jsx';
 import Alerts from './pages/Alerts.jsx';
+import Notifications from './pages/Notifications.jsx';
 import AppJobs from './pages/AppJobs.jsx';
 import Admin from './pages/Admin.jsx';
 import Team from './pages/Team.jsx';
@@ -106,6 +107,7 @@ export default function App() {
         <Route path="offres/:id" element={<JobDetail inApp />} />
         <Route path="profil" element={<Profile />} />
         <Route path="candidatures" element={<Applications />} />
+        <Route path="notifications" element={<Notifications />} />
         <Route path="alertes" element={<Alerts />} />
         <Route path="conseils" element={<Advice inApp />} />
         <Route path="conseils/:id" element={<AdviceDetail inApp />} />

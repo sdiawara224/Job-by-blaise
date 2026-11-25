@@ -93,6 +93,27 @@ const SQLITE_DDL = `
     UNIQUE(user_id, job_id)
   );
 
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    application_id INTEGER REFERENCES applications(id) ON DELETE SET NULL,
+    job_title TEXT NOT NULL,
+    company_name TEXT NOT NULL,
+    old_status TEXT NOT NULL,
+    new_status TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1))
+  );
+  CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id, id);
+  CREATE TRIGGER IF NOT EXISTS application_status_notification
+  AFTER UPDATE OF status ON applications
+  WHEN OLD.status IS NOT NEW.status
+  BEGIN
+    INSERT INTO notifications (user_id, application_id, job_title, company_name, old_status, new_status)
+    SELECT NEW.user_id, NEW.id, j.title, c.name, OLD.status, NEW.status
+    FROM jobs j JOIN companies c ON c.id = j.company_id WHERE j.id = NEW.job_id;
+  END;
+
   CREATE TABLE IF NOT EXISTS alert_settings (
     user_id INTEGER PRIMARY KEY REFERENCES users(id),
     enabled INTEGER DEFAULT 1,

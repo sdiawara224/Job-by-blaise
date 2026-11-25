@@ -4,9 +4,11 @@ import Icon from '../components/Icon.jsx';
 import MatchRing from '../components/MatchRing.jsx';
 import JobCard from '../components/JobCard.jsx';
 import { api } from '../api.js';
+import { useCandidateActivity } from '../candidateActivity.jsx';
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const activity = useCandidateActivity();
   const [q, setQ] = useState('');
   const nav = useNavigate();
 
@@ -15,6 +17,8 @@ export default function Dashboard() {
 
   if (!data) return <div className="page-loader">Chargement de ton espace…</div>;
 
+  const appStats = activity?.data?.stats || data.applications;
+  const unreadSms = activity?.data?.unreadSms ?? data.unreadSms;
   const first = (data.greeting.fullName || '').split(' ')[0];
   const rec = data.recommended || [];
   const best = rec[0];
@@ -43,16 +47,16 @@ export default function Dashboard() {
         </div>
         <div className="dash-hero-stats">
           <div className="dash-stat">
-            <b>{data.applications.total}</b>
-            <span>candidature{data.applications.total > 1 ? 's' : ''}</span>
+            <Link to="/app/candidatures"><b>{appStats.total}</b>
+            <span>candidature{appStats.total > 1 ? 's' : ''}</span></Link>
           </div>
           <div className="dash-stat">
-            <b>{data.applications.accepted}</b>
-            <span>acceptée{data.applications.accepted > 1 ? 's' : ''}</span>
+            <Link to="/app/candidatures"><b>{appStats.accepted}</b>
+            <span>acceptée{appStats.accepted > 1 ? 's' : ''}</span></Link>
           </div>
           <div className="dash-stat">
-            <b>{data.unreadSms}</b>
-            <span>SMS non lu{data.unreadSms > 1 ? 's' : ''}</span>
+            <Link to="/app/alertes"><b>{unreadSms}</b>
+            <span>SMS non lu{unreadSms > 1 ? 's' : ''}</span></Link>
           </div>
         </div>
       </section>
@@ -134,9 +138,9 @@ export default function Dashboard() {
               <h2><Icon name="apps" size={17} /> Mes candidatures</h2>
             </div>
             <div className="mini-stats">
-              <div><b>{data.applications.pending}</b><span>En attente</span></div>
-              <div><b>{data.applications.inProgress}</b><span>En cours</span></div>
-              <div><b>{data.applications.accepted}</b><span>Acceptées</span></div>
+              <div><b>{appStats.pending}</b><span>En attente</span></div>
+              <div><b>{appStats.inProgress}</b><span>En cours</span></div>
+              <div><b>{appStats.accepted}</b><span>Acceptées</span></div>
             </div>
             <Link to="/app/candidatures" className="btn btn-outline btn-block">Suivre mes candidatures</Link>
           </div>

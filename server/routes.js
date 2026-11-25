@@ -200,20 +200,20 @@ router.get('/jobs/:id(\\d+)', wrap(async (req, res) => {
 }));
 
 // ================= CANDIDATURES =================
-router.get('/applications', requireAuth, wrap(async (req, res) => {
+async function loadApplications(userId) {
   const rows = await db.prepare(`
     SELECT a.*, j.title, j.city, j.contract, c.name AS company_name, c.color AS company_color
     FROM applications a
     JOIN jobs j ON j.id = a.job_id
     JOIN companies c ON c.id = j.company_id
     WHERE a.user_id = ? ORDER BY a.created_at DESC
-  `).all(req.user.id);
+  `).all(userId);
   const applications = rows.map((r) => ({
     id: r.id, jobId: r.job_id, title: r.title, city: r.city, contract: r.contract,
     company: { name: r.company_name, color: r.company_color },
     status: r.status, coverLetter: r.cover_letter, createdAt: r.created_at,
   }));
-  res.json({
+  return {
     applications,
     stats: {
       total: applications.length,
@@ -221,7 +221,41 @@ router.get('/applications', requireAuth, wrap(async (req, res) => {
       inProgress: applications.filter((a) => a.status === 'En cours').length,
       accepted: applications.filter((a) => a.status === 'Acceptée').length,
     },
-  });
+  };
+}
+
+router.get('/applications', requireAuth, wrap(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(await loadApplications(req.user.id));
+}));
+
+// Notifications internes, indépendantes des préférences d’alertes SMS.
+router.get('/activity', requireAuth, wrap(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const uid = req.user.id;
+  const [applications, notifications, unread, sms] = await Promise.all([
+    loadApplications(uid),
+    db.prepare('SELECT id, application_id, job_title, company_name, old_status, new_status, created_at, is_read FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 50').all(uid),
+    db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND is_read = 0').get(uid),
+    db.prepare('SELECT COUNT(*) AS n FROM sms_messages WHERE user_id = ? AND is_read = 0').get(uid),
+  ]);
+  res.json({ ...applications, notifications: notifications.map(n => ({
+    id: n.id, applicationId: n.application_id, title: n.job_title, company: n.company_name,
+    oldStatus: n.old_status, newStatus: n.new_status, createdAt: n.created_at, isRead: Number(n.is_read) === 1,
+  })), unreadNotifications: Number(unread.n), unreadSms: Number(sms.n) });
+}));
+
+router.post('/notifications/read', requireAuth, wrap(async (req, res) => {
+  const body = req.body;
+  if (!isRecord(body) || Object.keys(body).length !== 1) return res.status(400).json({ error: 'Choisissez une notification ou une borne de lecture.' });
+  const validId = id => Number.isSafeInteger(id) && id > 0;
+  if (validId(body.upTo)) {
+    // Une notification arrivée après l’affichage reste non lue.
+    await db.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ? AND id <= ?').run(req.user.id, body.upTo);
+  } else if (Array.isArray(body.ids) && body.ids.length > 0 && body.ids.length <= 100 && body.ids.every(validId)) {
+    await db.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ? AND id IN (${body.ids.map(() => '?').join(', ')})`).run(req.user.id, ...body.ids);
+  } else return res.status(400).json({ error: 'Identifiants de notification invalides.' });
+  res.json({ ok: true });
 }));
 
 router.post('/applications', requireAuth, wrap(async (req, res) => {

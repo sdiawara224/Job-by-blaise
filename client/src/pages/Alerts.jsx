@@ -25,7 +25,7 @@ export default function Alerts() {
 
   useEffect(() => {
     if (messages.some((m) => !m.isRead)) {
-      const t = setTimeout(() => api('/alerts/read', { method: 'POST' }).catch(() => {}), 1500);
+      const t = setTimeout(() => api('/alerts/read', { method: 'POST' }).then(() => setMessages(current => current.map(m => messages.some(seen => seen.id === m.id) ? { ...m, isRead: true } : m))).catch(() => {}), 1500);
       return () => clearTimeout(t);
     }
   }, [messages]);

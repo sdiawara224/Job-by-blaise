@@ -1,27 +1,29 @@
-import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
 import { useAuth } from '../auth.jsx';
-import { api } from '../api.js';
+import { CandidateActivityProvider, useCandidateActivity } from '../candidateActivity.jsx';
 
 const NAV = [
   { to: '/app', icon: 'home', label: 'Accueil', end: true },
   { to: '/app/offres', icon: 'jobs', label: 'Offres d’emploi' },
   { to: '/app/profil', icon: 'profile', label: 'Mon profil' },
   { to: '/app/candidatures', icon: 'apps', label: 'Mes candidatures' },
+  { to: '/app/notifications', icon: 'bell', label: 'Notifications', notifications: true },
   { to: '/app/alertes', icon: 'bell', label: 'Mes alertes', badge: true },
   { to: '/app/conseils', icon: 'advice', label: 'Conseils carrière' },
 ];
 
 export default function AppLayout() {
+  return <CandidateActivityProvider><AppShell /></CandidateActivityProvider>;
+}
+
+function AppShell() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
-  const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    api('/alerts').then((d) => setUnread(d.unread || 0)).catch(() => {});
-  }, []);
+  const { data, error, refresh } = useCandidateActivity();
+  const unread = data?.unreadSms || 0;
+  const unreadNotifications = data?.unreadNotifications || 0;
 
   const initials = (user?.fullName || 'U')
     .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -37,7 +39,7 @@ export default function AppLayout() {
             <NavLink key={n.to} to={n.to} end={n.end} className="sidebar-link">
               <Icon name={n.icon} size={19} />
               <span>{n.label}</span>
-              {n.badge && unread > 0 && <em className="sidebar-badge">{unread}</em>}
+              {(n.notifications ? unreadNotifications : n.badge ? unread : 0) > 0 && <em className="sidebar-badge">{n.notifications ? unreadNotifications : unread}</em>}
             </NavLink>
           ))}
         </nav>
@@ -57,9 +59,9 @@ export default function AppLayout() {
             <Link to="/app/offres">Rechercher un emploi, une entreprise…</Link>
           </div>
           <div className="app-topbar-user">
-            <Link to="/app/alertes" className="icon-btn" title="Alertes SMS">
+            <Link to="/app/notifications" className="icon-btn" title="Notifications de candidatures" aria-label={`Notifications : ${unreadNotifications} non lue${unreadNotifications > 1 ? 's' : ''}`}>
               <Icon name="bell" size={19} />
-              {unread > 0 && <em className="dot-badge" />}
+              {unreadNotifications > 0 && <em className="dot-badge" />}
             </Link>
             <Link to="/app/profil" className="user-chip">
               <span className="user-avatar">{initials}</span>
@@ -71,6 +73,8 @@ export default function AppLayout() {
           </div>
         </header>
         <main className="app-content">
+          {error && <div className="form-error" role="alert">Actualisation des candidatures et notifications impossible : {error} <button className="link-btn" onClick={refresh}>Réessayer</button></div>}
+          {unreadNotifications > 0 && <div className="candidate-notice" role="status"><Icon name="bell" size={18} /><Link to="/app/notifications">{unreadNotifications} notification{unreadNotifications > 1 ? 's' : ''} de candidature non lue{unreadNotifications > 1 ? 's' : ''} — Consulter</Link></div>}
           <Outlet />
         </main>
       </div>

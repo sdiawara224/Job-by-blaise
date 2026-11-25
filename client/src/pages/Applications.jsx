@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import { api, fmtDate } from '../api.js';
+import { useCandidateActivity } from '../candidateActivity.jsx';
 
 const STATUS_CLASS = {
   'En attente': 'pending',
@@ -11,11 +12,9 @@ const STATUS_CLASS = {
 };
 
 export default function Applications() {
-  const [data, setData] = useState(null);
+  const { data, refresh } = useCandidateActivity();
   const [err, setErr] = useState('');
 
-  const load = () => api('/applications').then(setData).catch((e) => setErr(e.message));
-  useEffect(() => { load(); }, []);
 
   if (err) return <div className="page-loader">{err}</div>;
   if (!data) return <div className="page-loader">Chargement des candidatures…</div>;
@@ -24,7 +23,7 @@ export default function Applications() {
     if (!window.confirm('Retirer cette candidature ?')) return;
     try {
       await api(`/applications/${id}`, { method: 'DELETE' });
-      load();
+      refresh();
     } catch (ex) {
       setErr(ex.message);
     }
