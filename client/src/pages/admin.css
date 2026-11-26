@@ -349,3 +349,8 @@
 .adm-user-tabs button[aria-selected=true] { background:var(--blue); color:white; box-shadow:0 3px 10px #2e6bff22; }
 .adm-user-tabs button:focus-visible { outline:3px solid #94b4ff; outline-offset:3px; }
 @media (max-width:480px) { .adm-user-tabs { width:100%; } .adm-user-tabs button { flex:1; padding:12px 10px; font-size:13px; } }
+
+.adm-team-upload { padding:16px; margin:16px 0; border:1px dashed #b6c9ee; border-radius:12px; background:#f7faff; }
+.adm-team-upload input[type=file] { padding:10px; max-width:100%; min-width:0; }
+.adm-team-upload input[type=file]::file-selector-button { border:0; border-radius:7px; padding:10px 14px; margin-right:12px; color:white; background:var(--blue); font-weight:600; cursor:pointer; }
+.adm-team-upload p { margin:10px 0; overflow-wrap:anywhere; }

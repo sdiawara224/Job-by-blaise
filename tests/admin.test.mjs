@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { isAdminUser } from '../server/auth.js';
+import sharp from 'sharp';
 
 const directory = await mkdtemp(join(tmpdir(), 'jbb-admin-test-'));
 const secret = randomBytes(48).toString('hex');
@@ -25,8 +26,8 @@ const port = await new Promise((resolve, reject) => {
   child.stdout.on('data', (d) => { logs += d; const found = logs.match(/TEST_PORT:(\d+)/); if (found) { clearTimeout(timer); resolve(Number(found[1])); } });
   child.once('exit', () => { clearTimeout(timer); reject(new Error(logs)); });
 });
-async function request(path, { token, method = 'GET', body } = {}) {
-  const res = await fetch(`http://127.0.0.1:${port}/api${path}`, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
+async function request(path, { token, method = 'GET', body, rawType } = {}) {
+  const res = await fetch(`http://127.0.0.1:${port}/api${path}`, { method, headers: { 'Content-Type': rawType || 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: rawType ? body : body ? JSON.stringify(body) : undefined });
   return { status: res.status, data: await res.json() };
 }
 const admin = (await request('/auth/admin/login', { method: 'POST', body: { email: 'admin@example.com', password: 'Admin-test-password-123' } })).data;
@@ -406,4 +407,37 @@ test('notifications : changement effectif, compteurs cohérents, isolation et le
   assert.equal(withdrawn.notifications.length, 3);
   assert.ok(withdrawn.notifications.every(n => n.applicationId === null));
   assert.equal(withdrawn.notifications[0].newStatus, 'Refusée');
+});
+
+
+test('photos équipe : import sécurisé, réencodage, URL persistante et publication explicite', async () => {
+  const image = await sharp({ create: { width: 1500, height: 1800, channels: 3, background: '#3366cc' } }).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+  const upload = (token, body = image, rawType = 'image/jpeg') => request('/admin/team/photo', { token, method: 'POST', body, rawType });
+  assert.equal((await upload(null)).status, 401);
+  assert.equal((await upload(candidate.token)).status, 403);
+  assert.equal((await upload(admin.token, Buffer.from('<svg></svg>'), 'image/svg+xml')).status, 415);
+  assert.equal((await upload(admin.token, Buffer.from('not an image'), 'image/png')).status, 400);
+  assert.equal((await upload(admin.token, image, 'image/png')).status, 400);
+  assert.equal((await upload(admin.token, Buffer.alloc(3 * 1024 * 1024 + 1), 'image/png')).status, 413);
+  const before = (await adminReq('/team')).data.members;
+  const uploaded = await upload(admin.token);
+  assert.equal(uploaded.status, 201);
+  assert.match(uploaded.data.photoUrl, /^\/api\/team\/photos\/[a-f0-9-]{36}\.webp$/);
+  assert.deepEqual((await adminReq('/team')).data.members, before); // téléverser ne publie pas un profil
+  const photo = await fetch(`http://127.0.0.1:${port}${uploaded.data.photoUrl}`);
+  assert.equal(photo.status, 200);
+  assert.match(photo.headers.get('content-type'), /image\/webp/);
+  assert.equal(photo.headers.get('x-content-type-options'), 'nosniff');
+  const metadata = await sharp(Buffer.from(await photo.arrayBuffer())).metadata();
+  assert.equal(metadata.format, 'webp');
+  assert.ok(metadata.width <= 1200 && metadata.height <= 1600);
+  assert.equal(metadata.exif, undefined);
+  const member = { id: 'uploaded-member', name: 'Profil importé', role: 'Fonction', bio: 'Présentation.', photoUrl: uploaded.data.photoUrl, isPublished: false };
+  await adminReq('/team', { method: 'PUT', body: { members: [member] } });
+  assert.equal((await adminReq('/team')).data.members[0].photoUrl, uploaded.data.photoUrl);
+  assert.deepEqual((await request('/team')).data.members, []);
+  await adminReq('/team', { method: 'PUT', body: { members: [{ ...member, isPublished: true }] } });
+  assert.equal((await request('/team')).data.members[0].photoUrl, uploaded.data.photoUrl);
+  assert.equal((await request('/team/photos/invalid.webp')).status, 404);
+  await adminReq('/team', { method: 'PUT', body: { members: before } });
 });

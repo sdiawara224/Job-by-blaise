@@ -3,6 +3,7 @@ import { db, backendName } from './db.js';
 import { isAdminUser, isAdminAccount, adminAccountEmails } from './auth.js';
 import { DEFAULT_CONTENT } from '../client/src/siteContent.js';
 import { validateTeam } from '../client/src/teamContent.js';
+import { storeTeamPhoto, TEAM_PHOTO_TYPES, TEAM_PHOTO_MAX_BYTES } from './teamPhotos.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -71,6 +72,13 @@ export function createAdminRouter() {
   }));
   router.get('/options', wrap(async (req, res) => {
     res.json({ companies: await db.prepare('SELECT id, name FROM companies ORDER BY name').all() });
+  }));
+  router.post('/team/photo', (req, res, next) => {
+    if (!TEAM_PHOTO_TYPES.includes(req.get('Content-Type')?.split(';')[0])) return res.status(415).json({ error: 'Choisissez une image JPEG, PNG ou WebP.' });
+    next();
+  }, express.raw({ type: () => true, limit: TEAM_PHOTO_MAX_BYTES }), wrap(async (req, res) => {
+    const photoUrl = await storeTeamPhoto(req.body, req.get('Content-Type').split(';')[0]);
+    res.status(201).json({ photoUrl });
   }));
   router.get('/team', wrap(async (req, res) => res.json(await readTeam())));
   router.put('/team', wrap(async (req, res) => {
@@ -189,6 +197,7 @@ export function createAdminRouter() {
   }));
   router.use((err, req, res, next) => {
     if (res.headersSent) return next(err);
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'La photo ne doit pas dépasser 3 Mo.' });
     if (err.status) return res.status(err.status).json({ error: err.message });
     if (/unique|constraint|foreign key/i.test(err.message)) return res.status(409).json({ error: 'Conflit : cet enregistrement existe déjà ou possède des éléments liés.' });
     console.error('[admin]', err.message);

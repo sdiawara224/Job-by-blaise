@@ -79,3 +79,61 @@ test('équipe publique : profils API, biographie en texte et image manquante rem
     assert.match(container.querySelector('.team-card-photo').textContent, /Photo à venir/);
   } finally { await React.act(async () => root.unmount()); }
 });
+
+
+test('équipe : importer une photo, aperçu, sauvegarde et retrait sans effacer le profil', async () => {
+  const calls = [];
+  const photoUrl = '/api/team/photos/11111111-1111-4111-8111-111111111111.webp';
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, ...options });
+    return { ok: true, json: async () => url === '/api/admin/team/photo' ? { photoUrl } : { members: options.method === 'PUT' ? JSON.parse(options.body).members : [member] } };
+  };
+  const root = await mount(TeamEditor, { notify: () => {}, onDirtyChange: () => {} });
+  const fileInput = () => container.querySelector('input[type=file]');
+  const select = async file => React.act(async () => {
+    Object.defineProperty(fileInput(), 'files', { configurable: true, value: [file] });
+    fileInput().dispatchEvent(new window.Event('change', { bubbles: true }));
+  });
+  try {
+    await select(new window.File(['photo'], 'portrait.jpg', { type: 'image/jpeg' }));
+    const upload = calls.find(c => c.url === '/api/admin/team/photo');
+    assert.equal(upload.method, 'POST');
+    assert.equal(upload.headers['Content-Type'], 'image/jpeg');
+    assert.equal(upload.body.name, 'portrait.jpg'); // binaire, pas un JSON/base64
+    assert.equal(container.querySelector('.team-card img').getAttribute('src'), photoUrl);
+    assert.equal(container.querySelector('[id$="-photoUrl"]').value, photoUrl);
+    assert.equal(container.querySelector('input[type=checkbox]').checked, false);
+    await React.act(async () => container.querySelector('form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true })));
+    assert.equal(JSON.parse(calls.find(c => c.method === 'PUT').body).members[0].photoUrl, photoUrl);
+    await React.act(async () => button('Retirer la photo').click());
+    assert.equal(container.querySelector('.team-card img'), null);
+    assert.equal(container.querySelector('[id$="-name"]').value, member.name);
+    assert.equal(button('Enregistrer l’équipe').disabled, false);
+  } finally { await React.act(async () => root.unmount()); }
+});
+
+test('équipe : fichier non pris en charge et panne d’import préservent la photo précédente', async () => {
+  const current = { ...member, photoUrl: '/previous.jpg' };
+  let uploads = 0;
+  globalThis.fetch = async url => url === '/api/admin/team/photo' ? (++uploads, { ok: false, status: 502, json: async () => ({ error: 'Stockage indisponible' }) }) : { ok: true, json: async () => ({ members: [current] }) };
+  const root = await mount(TeamEditor, { notify: () => {}, onDirtyChange: () => {} });
+  const select = async file => React.act(async () => {
+    const input = container.querySelector('input[type=file]');
+    Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+    input.dispatchEvent(new window.Event('change', { bubbles: true }));
+  });
+  try {
+    await select(new window.File(['svg'], 'image.svg', { type: 'image/svg+xml' }));
+    assert.equal(uploads, 0);
+    assert.match(container.querySelector('[role=alert]').textContent, /JPEG, PNG ou WebP/);
+    const oversized = new window.File(['x'], 'large.png', { type: 'image/png' });
+    Object.defineProperty(oversized, 'size', { value: 3 * 1024 * 1024 + 1 });
+    await select(oversized); assert.equal(uploads, 0);
+    await select(new window.File(['photo'], 'image.png', { type: 'image/png' }));
+    assert.equal(uploads, 1);
+    assert.match(container.querySelector('[role=alert]').textContent, /Stockage indisponible/);
+    assert.equal(container.querySelector('[id$="-photoUrl"]').value, current.photoUrl);
+    assert.equal(container.querySelector('fieldset').disabled, false);
+    assert.equal(container.querySelector('[id$="-name"]').value, member.name);
+  } finally { await React.act(async () => root.unmount()); }
+});

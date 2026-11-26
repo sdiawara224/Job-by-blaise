@@ -1,6 +1,7 @@
 // Job by blaise — API REST
 // Handlers ASYNCHRONES (couche données async) : wrap() capte les rejets sous Express 4.
 import express from 'express';
+import { readLocalTeamPhoto } from './teamPhotos.js';
 import {
   db, initSchema, backendName, jget, publicUser, jobRow, JOB_SELECT, ALL_SKILLS, CITIES,
   CONTRACT_TYPES, EDUCATION_ORDER,
@@ -19,6 +20,12 @@ const router = express.Router();
 
 // Express 4 : on rejoue les promesses rejetées vers le gestionnaire d'erreurs.
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+router.get('/team/photos/:filename', wrap(async (req, res) => {
+  const image = await readLocalTeamPhoto(req.params.filename);
+  if (!image) return res.status(404).json({ error: 'Photo introuvable.' });
+  res.set({ 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' });
+  res.send(image);
+}));
 router.get('/team', wrap(async (req, res) => {
   const team = await readTeam();
   res.json({ members: team.members.filter(member => member.isPublished), updatedAt: team.updatedAt });
