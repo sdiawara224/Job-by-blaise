@@ -53,6 +53,11 @@ async function requireAuth(req, res, next) {
 }
 
 async function searchJobs({ search, city, contract, domain, sort } = {}) {
+  for (const value of [search, city, contract, domain, sort]) {
+    if (value !== undefined && (typeof value !== 'string' || value.length > 200)) {
+      throw Object.assign(new Error('Les filtres de recherche doivent être des textes de 200 caractères maximum.'), { status: 400 });
+    }
+  }
   const clauses = ['j.is_active = 1 AND j.published_by_admin = 1'];
   const params = [];
   if (search) {

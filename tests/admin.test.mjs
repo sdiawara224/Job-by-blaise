@@ -441,3 +441,24 @@ test('photos équipe : import sécurisé, réencodage, URL persistante et public
   assert.equal((await request('/team/photos/invalid.webp')).status, 404);
   await adminReq('/team', { method: 'PUT', body: { members: before } });
 });
+
+test('API : erreurs de parsing et routes inconnues restent JSON, sans détails internes', async () => {
+  for (const [path, options, status] of [
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"password":"secret-test",' }, 400],
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'x'.repeat(1024 * 1024 + 1) }) }, 413],
+    ['/route-inexistante', {}, 404],
+    ['/jobs?city[x]=Conakry', {}, 400],
+    ['/jobs?city=Conakry&city=Kindia', {}, 400],
+    ['/jobs?search=' + 'x'.repeat(201), {}, 400],
+    ['/team/photos/%E0%A4%A', {}, 400],
+  ]) {
+    const response = await fetch(`http://127.0.0.1:${port}/api${path}`, options);
+    assert.equal(response.status, status);
+    assert.match(response.headers.get('Content-Type'), /application\/json/);
+    const text = await response.text();
+    assert.equal(typeof JSON.parse(text).error, 'string');
+    assert.ok(!/secret-test|SyntaxError|URIError|node_modules|<!DOCTYPE/i.test(text));
+    assert.match(response.headers.get('Cache-Control'), /no-store/);
+  }
+  assert.equal((await request('/health')).status, 200);
+});

@@ -14,6 +14,8 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
+    // Autorise uniquement le domaine du proxy de prévisualisation, sans ouvrir tous les hôtes.
+    allowedHosts: ['.e2b.app'],
     port: 5173,
     proxy: { '/api': 'http://localhost:3001' },
   },

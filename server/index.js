@@ -11,7 +11,7 @@ const DIST = path.join(__dirname, '..', 'dist');
 const PORT = Number(process.env.PORT) || 3001;
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.disable('x-powered-by');
 
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
@@ -21,7 +21,22 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.json({ limit: '1mb' }));
 app.use('/api', router);
+app.use('/api', (req, res) => res.status(404).json({ error: 'Route API introuvable.' }));
+// Les erreurs du parseur JSON et les rejets asynchrones doivent rester lisibles
+// par le client. Ne jamais renvoyer les saisies, requêtes SQL ou traces internes.
+app.use('/api', (err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  res.set('Cache-Control', 'no-store');
+  if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse (1 Mo maximum pour les données JSON).' });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Données JSON invalides.' });
+  if (err instanceof URIError) return res.status(400).json({ error: 'Adresse de requête invalide.' });
+  const status = Number(err.status || err.statusCode);
+  if (status >= 400 && status < 500) return res.status(status).json({ error: 'Requête invalide.' });
+  console.error('[api]', err.name || 'Erreur', '— échec du traitement de la requête');
+  res.status(500).json({ error: 'Erreur serveur. Réessayez dans un instant.' });
+});
 
 // statiques + repli SPA
 if (fs.existsSync(DIST)) {
